@@ -30,7 +30,7 @@ h2{font-family:'Jost',sans-serif;font-size:19px;font-weight:600;letter-spacing:-
   color:var(--gris);font-family:'Jost',sans-serif;font-weight:500;padding-left:13px;
   border-left:1px solid var(--linea);}
 
-.marcas{display:flex;align-items:center;gap:26px;margin-top:24px;padding-top:20px;
+.marcas{display:flex;align-items:center;gap:26px;margin-top:48px;padding-top:22px;
   border-top:1px solid var(--linea);flex-wrap:wrap;}
 .marcas .eyebrow{margin-right:2px;}
 .marca-logo-chica{height:20px;width:auto;object-fit:contain;}
@@ -376,18 +376,6 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
         </dl>
       </div>
     </div>
-    {% if p.marcas %}
-    <div class="marcas">
-      <span class="eyebrow">Equipo de</span>
-      {% for marca in p.marcas %}
-        {% if marca == 'victron' %}
-        <img src="/mi-static/logo-victron.png" alt="Victron Energy" class="marca-logo-chica victron">
-        {% elif marca == 'bsl' %}
-        <img src="/mi-static/logo-bsl.png" alt="BSL Batt" class="marca-logo-chica">
-        {% endif %}
-      {% endfor %}
-    </div>
-    {% endif %}
   </section>
   {% endif %}
 
@@ -425,6 +413,19 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
   {% endif %}
 
   {% endfor %}
+
+  {% if p.marcas %}
+  <div class="marcas">
+    <span class="eyebrow">Equipo de</span>
+    {% for marca in p.marcas %}
+      {% if marca == 'victron' %}
+      <img src="/mi-static/logo-victron.png" alt="Victron Energy" class="marca-logo-chica victron">
+      {% elif marca == 'bsl' %}
+      <img src="/mi-static/logo-bsl.png" alt="BSL Batt" class="marca-logo-chica">
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
 
   <div class="pie">
     <span>Los Amigos Energy · Solar Energy Lat, S.A. de C.V.</span>
