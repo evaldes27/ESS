@@ -624,6 +624,13 @@ TRADUCCIONES = {
         "pagado": "Pagado",
         "saldo_pendiente": "Saldo pendiente",
 
+        "logistica_titulo": "Logística de envío",
+        "logistica_sub": "El progreso que normalmente no ves",
+        "sin_logistica": "Todavía no hay envíos registrados para este proyecto.",
+        "logistica_estado": {"pendiente": "Pendiente", "en_transito": "En tránsito", "entregado": "Entregado"},
+        "logistica_guia": "Guía",
+        "logistica_llega": "Llega",
+
         "documentos_titulo": "Documentos",
         "documentos_sub": "Contrato, planos y más",
         "documento_default": "Documento",
@@ -690,6 +697,13 @@ TRADUCCIONES = {
         "pagado": "Paid",
         "saldo_pendiente": "Balance due",
 
+        "logistica_titulo": "Shipping logistics",
+        "logistica_sub": "The progress you'd normally never see",
+        "sin_logistica": "No shipments registered for this project yet.",
+        "logistica_estado": {"pendiente": "Pending", "en_transito": "In transit", "entregado": "Delivered"},
+        "logistica_guia": "Tracking",
+        "logistica_llega": "Arrives",
+
         "documentos_titulo": "Documents",
         "documentos_sub": "Contract, plans and more",
         "documento_default": "Document",
@@ -747,6 +761,7 @@ def orden_secciones(obra_abierta, energizado, tiene_cfe):
             secciones.append("cfe")
     if obra_abierta:
         secciones.append("avance")
+        secciones.append("logistica")
     secciones += ["documentos", "seriales", "sistema", "bitacora"]
     return secciones
 
