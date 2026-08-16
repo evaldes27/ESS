@@ -25,7 +25,9 @@ from datetime import datetime, timedelta, timezone
 import requests
 from flask import Flask, abort, jsonify, redirect, render_template
 
-app = Flask(__name__)
+# static_url_path distinto de "/static": ese prefijo ya lo usa monitor-luz-tulum
+# detrás del mismo nginx, y "/static/" a secas les pisaría sus imágenes.
+app = Flask(__name__, static_url_path="/mi-static")
 
 
 # ================================================================== monday
