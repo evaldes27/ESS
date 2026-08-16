@@ -1,0 +1,8 @@
+services:
+  autonomia:
+    build: .
+    container_name: autonomia-lae
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:8030:8000"

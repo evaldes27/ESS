@@ -1,0 +1,8 @@
+services:
+  portal:
+    build: .
+    container_name: portal-lae
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:8010:8000"

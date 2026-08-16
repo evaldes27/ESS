@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0C5A40">
+<title>Tu energía — Los Amigos Energy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Libre+Franklin:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --verde:#0C5A40; --tinta:#101E19; --sol:#E8A33D; --linea:#C6D0C8;
+  --gris:#5B6B62; --rojo:#D9705A;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--verde);color:#fff;min-height:100vh;
+  font-family:'Libre Franklin',-apple-system,system-ui,sans-serif;line-height:1.55;
+  -webkit-font-smoothing:antialiased;display:flex;flex-direction:column;}
+
+.marca{padding:22px 24px;display:flex;align-items:center;gap:10px;}
+.sol{width:22px;height:22px;border-radius:50%;background:#fff;position:relative;flex:none;}
+.sol::after{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--verde);}
+.marca b{font-family:'Jost',sans-serif;font-size:14px;font-weight:600;letter-spacing:.01em;}
+
+main{flex:1;display:flex;flex-direction:column;justify-content:center;
+  padding:10px 24px 40px;max-width:600px;margin:0 auto;width:100%;}
+
+.rotulo{font-family:'Jost',sans-serif;font-size:12px;font-weight:600;letter-spacing:.15em;
+  text-transform:uppercase;color:rgba(255,255,255,.6);}
+
+.grande{font-family:'Jost',sans-serif;font-weight:600;letter-spacing:-.035em;line-height:1;
+  margin:14px 0 0;font-size:clamp(48px,15vw,88px);}
+.grande.poco{color:var(--sol);}
+
+.hasta{font-size:clamp(17px,4.5vw,21px);margin:16px 0 0;color:rgba(255,255,255,.9);}
+
+.barra{height:8px;background:rgba(255,255,255,.16);border-radius:4px;margin-top:30px;overflow:hidden;}
+.barra span{display:block;height:100%;border-radius:4px;background:var(--sol);
+  transition:width .6s ease;}
+.escala{display:flex;justify-content:space-between;margin-top:8px;font-size:11.5px;
+  color:rgba(255,255,255,.5);font-family:'Jost',sans-serif;letter-spacing:.06em;}
+
+.datos{display:flex;gap:30px;margin-top:38px;padding-top:26px;
+  border-top:1px solid rgba(255,255,255,.15);flex-wrap:wrap;}
+.datos div b{display:block;font-family:'Jost',sans-serif;font-size:26px;font-weight:600;
+  letter-spacing:-.02em;line-height:1.1;}
+.datos div span{font-family:'Jost',sans-serif;font-size:10.5px;font-weight:500;
+  letter-spacing:.13em;text-transform:uppercase;color:rgba(255,255,255,.55);}
+
+.aviso{background:rgba(0,0,0,.18);border-radius:6px;padding:15px 17px;margin-top:30px;
+  font-size:14px;color:rgba(255,255,255,.92);line-height:1.5;}
+.aviso b{font-family:'Jost',sans-serif;font-weight:600;display:block;margin-bottom:3px;}
+
+.pie{padding:20px 24px 30px;text-align:center;font-size:12px;color:rgba(255,255,255,.45);}
+.pie a{color:rgba(255,255,255,.75);}
+
+@media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+</head>
+<body>
+
+<div class="marca">
+  <div class="sol"></div>
+  <b>Los Amigos Energy</b>
+</div>
+
+<main>
+
+  {% if d.cargando %}
+    <div class="rotulo">Tu batería se está cargando</div>
+    <div class="grande">{{ d.soc }}%</div>
+    <p class="hasta">
+      {% if d.solar > 100 %}
+        El sol está cargando tu batería en este momento.
+      {% else %}
+        Tu batería está cargando.
+      {% endif %}
+    </p>
+
+  {% elif d.horas_txt %}
+    <div class="rotulo">Te queda de energía</div>
+    <div class="grande {% if d.horas and d.horas < 3 %}poco{% endif %}" id="grande">{{ d.horas_txt }}</div>
+    <p class="hasta">
+      {% if d.hasta %}Hasta las <strong>{{ d.hasta }}</strong>, con lo que estás usando ahorita.{% endif %}
+    </p>
+
+    <div class="barra">
+      <span id="barra" style="width: {{ d.soc }}%"></span>
+    </div>
+    <div class="escala">
+      <span>Batería {{ d.soc }}%</span>
+      <span>Llena</span>
+    </div>
+
+  {% else %}
+    <div class="rotulo">Tu sistema</div>
+    <div class="grande">{{ d.soc }}%</div>
+    <p class="hasta">Batería cargada. No hay consumo suficiente para calcular el tiempo restante.</p>
+  {% endif %}
+
+  <div class="datos">
+    <div>
+      <b id="consumo">{{ d.consumo }} W</b>
+      <span>Estás usando</span>
+    </div>
+    <div>
+      <b id="soc">{{ d.soc }}%</b>
+      <span>Batería</span>
+    </div>
+    {% if d.solar > 50 %}
+    <div>
+      <b id="solar">{{ d.solar }} W</b>
+      <span>Del sol</span>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if d.red == 'rechazada' %}
+  <div class="aviso">
+    <b>La luz de la colonia está muy baja</b>
+    Hay corriente en la calle, pero llega tan baja que tu sistema la está bloqueando
+    para no dañar tus aparatos. Tu casa está funcionando con las baterías.
+  </div>
+  {% elif d.red == 'caida' %}
+  <div class="aviso">
+    <b>No hay luz de la calle</b>
+    Tu casa está funcionando con las baterías. Te avisamos aquí cuando regrese.
+  </div>
+  {% endif %}
+
+</main>
+
+<div class="pie">
+  Actualizado a las <span id="hora">{{ d.actualizado }}</span>
+</div>
+
+<script>
+(function () {
+  function pinta(d) {
+    var g = document.getElementById('grande');
+    if (g && d.horas_txt && !d.cargando) {
+      g.textContent = d.horas_txt;
+      g.classList.toggle('poco', d.horas !== null && d.horas < 3);
+    }
+    var set = function (id, v) {
+      var e = document.getElementById(id);
+      if (e && v !== undefined && v !== null) e.textContent = v;
+    };
+    set('consumo', d.consumo + ' W');
+    set('soc', d.soc + '%');
+    if (d.solar > 50) set('solar', d.solar + ' W');
+    set('hora', d.actualizado);
+    var b = document.getElementById('barra');
+    if (b) b.style.width = d.soc + '%';
+  }
+
+  function jala() {
+    fetch(window.location.pathname + '/datos', { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) { if (d) pinta(d); })
+      .catch(function () { });
+  }
+
+  setInterval(jala, 60000);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) jala();
+  });
+})();
+</script>
+
+</body>
+</htmlcat > /opt/autonomia-lae/templates/autonomia.html <<'FIN'
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0C5A40">
+<title>Tu energía — Los Amigos Energy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Libre+Franklin:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --verde:#0C5A40; --tinta:#101E19; --sol:#E8A33D; --linea:#C6D0C8;
+  --gris:#5B6B62; --rojo:#D9705A;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--verde);color:#fff;min-height:100vh;
+  font-family:'Libre Franklin',-apple-system,system-ui,sans-serif;line-height:1.55;
+  -webkit-font-smoothing:antialiased;display:flex;flex-direction:column;}
+
+.marca{padding:22px 24px;display:flex;align-items:center;gap:10px;}
+.sol{width:22px;height:22px;border-radius:50%;background:#fff;position:relative;flex:none;}
+.sol::after{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--verde);}
+.marca b{font-family:'Jost',sans-serif;font-size:14px;font-weight:600;letter-spacing:.01em;}
+
+main{flex:1;display:flex;flex-direction:column;justify-content:center;
+  padding:10px 24px 40px;max-width:600px;margin:0 auto;width:100%;}
+
+.rotulo{font-family:'Jost',sans-serif;font-size:12px;font-weight:600;letter-spacing:.15em;
+  text-transform:uppercase;color:rgba(255,255,255,.6);}
+
+.grande{font-family:'Jost',sans-serif;font-weight:600;letter-spacing:-.035em;line-height:1;
+  margin:14px 0 0;font-size:clamp(48px,15vw,88px);}
+.grande.poco{color:var(--sol);}
+
+.hasta{font-size:clamp(17px,4.5vw,21px);margin:16px 0 0;color:rgba(255,255,255,.9);}
+
+.barra{height:8px;background:rgba(255,255,255,.16);border-radius:4px;margin-top:30px;overflow:hidden;}
+.barra span{display:block;height:100%;border-radius:4px;background:var(--sol);
+  transition:width .6s ease;}
+.escala{display:flex;justify-content:space-between;margin-top:8px;font-size:11.5px;
+  color:rgba(255,255,255,.5);font-family:'Jost',sans-serif;letter-spacing:.06em;}
+
+.datos{display:flex;gap:30px;margin-top:38px;padding-top:26px;
+  border-top:1px solid rgba(255,255,255,.15);flex-wrap:wrap;}
+.datos div b{display:block;font-family:'Jost',sans-serif;font-size:26px;font-weight:600;
+  letter-spacing:-.02em;line-height:1.1;}
+.datos div span{font-family:'Jost',sans-serif;font-size:10.5px;font-weight:500;
+  letter-spacing:.13em;text-transform:uppercase;color:rgba(255,255,255,.55);}
+
+.aviso{background:rgba(0,0,0,.18);border-radius:6px;padding:15px 17px;margin-top:30px;
+  font-size:14px;color:rgba(255,255,255,.92);line-height:1.5;}
+.aviso b{font-family:'Jost',sans-serif;font-weight:600;display:block;margin-bottom:3px;}
+
+.pie{padding:20px 24px 30px;text-align:center;font-size:12px;color:rgba(255,255,255,.45);}
+.pie a{color:rgba(255,255,255,.75);}
+
+@media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+</head>
+<body>
+
+<div class="marca">
+  <div class="sol"></div>
+  <b>Los Amigos Energy</b>
+</div>
+
+<main>
+
+  {% if d.cargando %}
+    <div class="rotulo">Tu batería se está cargando</div>
+    <div class="grande">{{ d.soc }}%</div>
+    <p class="hasta">
+      {% if d.solar > 100 %}
+        El sol está cargando tu batería en este momento.
+      {% else %}
+        Tu batería está cargando.
+      {% endif %}
+    </p>
+
+  {% elif d.horas_txt %}
+    <div class="rotulo">Te queda de energía</div>
+    <div class="grande {% if d.horas and d.horas < 3 %}poco{% endif %}" id="grande">{{ d.horas_txt }}</div>
+    <p class="hasta">
+      {% if d.hasta %}Hasta las <strong>{{ d.hasta }}</strong>, con lo que estás usando ahorita.{% endif %}
+    </p>
+
+    <div class="barra">
+      <span id="barra" style="width: {{ d.soc }}%"></span>
+    </div>
+    <div class="escala">
+      <span>Batería {{ d.soc }}%</span>
+      <span>Llena</span>
+    </div>
+
+  {% else %}
+    <div class="rotulo">Tu sistema</div>
+    <div class="grande">{{ d.soc }}%</div>
+    <p class="hasta">Batería cargada. No hay consumo suficiente para calcular el tiempo restante.</p>
+  {% endif %}
+
+  <div class="datos">
+    <div>
+      <b id="consumo">{{ d.consumo }} W</b>
+      <span>Estás usando</span>
+    </div>
+    <div>
+      <b id="soc">{{ d.soc }}%</b>
+      <span>Batería</span>
+    </div>
+    {% if d.solar > 50 %}
+    <div>
+      <b id="solar">{{ d.solar }} W</b>
+      <span>Del sol</span>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if d.red == 'rechazada' %}
+  <div class="aviso">
+    <b>La luz de la colonia está muy baja</b>
+    Hay corriente en la calle, pero llega tan baja que tu sistema la está bloqueando
+    para no dañar tus aparatos. Tu casa está funcionando con las baterías.
+  </div>
+  {% elif d.red == 'caida' %}
+  <div class="aviso">
+    <b>No hay luz de la calle</b>
+    Tu casa está funcionando con las baterías. Te avisamos aquí cuando regrese.
+  </div>
+  {% endif %}
+
+</main>
+
+<div class="pie">
+  Actualizado a las <span id="hora">{{ d.actualizado }}</span>
+</div>
+
+<script>
+(function () {
+  function pinta(d) {
+    var g = document.getElementById('grande');
+    if (g && d.horas_txt && !d.cargando) {
+      g.textContent = d.horas_txt;
+      g.classList.toggle('poco', d.horas !== null && d.horas < 3);
+    }
+    var set = function (id, v) {
+      var e = document.getElementById(id);
+      if (e && v !== undefined && v !== null) e.textContent = v;
+    };
+    set('consumo', d.consumo + ' W');
+    set('soc', d.soc + '%');
+    if (d.solar > 50) set('solar', d.solar + ' W');
+    set('hora', d.actualizado);
+    var b = document.getElementById('barra');
+    if (b) b.style.width = d.soc + '%';
+  }
+
+  function jala() {
+    fetch(window.location.pathname + '/datos', { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) { if (d) pinta(d); })
+      .catch(function () { });
+  }
+
+  setInterval(jala, 60000);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) jala();
+  });
+})();
+</script>
+
+</body>
+</html>
