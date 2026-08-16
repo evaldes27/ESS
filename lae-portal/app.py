@@ -425,12 +425,15 @@ def datos_vrm(cfg):
 
 # CLIENTES mapea token secreto -> config unificada del cliente. Ruta /mi/<token>.
 # Cada cliente puede traer board_id (monday), vrm_id + banco_kwh (VRM), o ambos.
-# "sistema", "documentos" y "saldo" son config manual, igual que "sistema" en PORTALES.
+# "sistema", "documentos", "seriales" y "saldo" son config manual, igual que "sistema" en PORTALES.
 # Ejemplo del .env:
 #   CLIENTES={"tok...": {"nombre": "Casa Juan Pablo", "cliente": "Juan Pablo",
 #     "ubicacion": "Tulum, Q. Roo", "board_id": "18423973736",
 #     "vrm_id": 901035, "banco_kwh": 30.72, "soc_minimo": 10,
-#     "sistema": {...}, "documentos": [{"nombre": "Contrato", "url": "https://..."}],
+#     "sistema": {...},
+#     "documentos": [{"tipo": "Contrato", "nombre": "Contrato de instalación", "url": "https://..."}],
+#     "seriales": [{"equipo": "Inversor Victron Quattro 10kVA", "modelo": "...",
+#                   "serie": "...", "garantia_hasta": "2029-08-10"}],
 #     "saldo": {"total": 450000, "pagado": 300000}}}
 CLIENTES = json.loads(os.environ.get("CLIENTES", "{}"))
 
@@ -442,7 +445,7 @@ def orden_secciones(obra_abierta, energizado):
         secciones.append("autonomia")
     if obra_abierta:
         secciones.append("avance")
-    secciones += ["documentos", "sistema", "bitacora"]
+    secciones += ["documentos", "seriales", "sistema", "bitacora"]
     return secciones
 
 

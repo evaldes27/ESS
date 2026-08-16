@@ -93,6 +93,18 @@ h1{font-family:'Jost',sans-serif;font-size:clamp(30px,5.5vw,44px);font-weight:60
 .doc:last-child{border-bottom:0;}
 .doc a{font-family:'Jost',sans-serif;font-size:12.5px;font-weight:500;color:var(--verde);
   border:1px solid var(--verde);border-radius:3px;padding:5px 11px;text-decoration:none;white-space:nowrap;}
+.doc-info{display:flex;flex-direction:column;gap:3px;min-width:0;}
+.doc-tipo{font-family:'Jost',sans-serif;font-size:10px;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--gris);}
+.doc-nombre{font-size:14px;}
+
+.tabla-wrap{margin-top:20px;overflow-x:auto;background:#fff;border:1px solid var(--linea);border-radius:5px;}
+.tabla{width:100%;border-collapse:collapse;font-size:13.5px;white-space:nowrap;}
+.tabla th{text-align:left;font-family:'Jost',sans-serif;font-size:10.5px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--gris);padding:13px 18px;
+  border-bottom:1px solid var(--linea);}
+.tabla td{padding:12px 18px;border-bottom:1px solid #EEF1EE;}
+.tabla tr:last-child td{border-bottom:0;}
 
 .entrada{display:grid;grid-template-columns:88px 1fr;gap:22px;padding:26px 0;
   border-bottom:1px solid var(--linea);}
@@ -296,13 +308,46 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
     <div class="docs">
       {% for doc in p.documentos %}
       <div class="doc">
-        <span>{{ doc.nombre }}</span>
+        <div class="doc-info">
+          <span class="doc-tipo">{{ doc.tipo or "Documento" }}</span>
+          <span class="doc-nombre">{{ doc.nombre }}</span>
+        </div>
         <a href="{{ doc.url }}" target="_blank" rel="noopener">Ver</a>
       </div>
       {% endfor %}
     </div>
     {% else %}
     <div class="vacio"><p style="margin-top:0">Todavía no hay documentos disponibles aquí.</p></div>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if sec == 'seriales' %}
+  <section class="sec">
+    <div class="sechead">
+      <h2>Seriales y garantías</h2>
+      <span class="eyebrow">Guarda esto para cuando lo necesites</span>
+    </div>
+    {% if p.seriales %}
+    <div class="tabla-wrap">
+      <table class="tabla">
+        <thead>
+          <tr><th>Equipo</th><th>Modelo</th><th>Serie</th><th>Garantía hasta</th></tr>
+        </thead>
+        <tbody>
+          {% for s in p.seriales %}
+          <tr>
+            <td>{{ s.equipo }}</td>
+            <td>{{ s.modelo or "—" }}</td>
+            <td class="dato">{{ s.serie or "—" }}</td>
+            <td>{{ s.garantia_hasta or "—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="vacio"><p style="margin-top:0">Todavía no hay seriales registrados para este sistema.</p></div>
     {% endif %}
   </section>
   {% endif %}
