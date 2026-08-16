@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Deploy portal-lae y/o autonomia-lae desde el Mac al VPS.
-# Uso: ./deploy.sh [portal-lae|autonomia-lae]   (sin argumento = ambas)
+# Deploy de lae-portal (portal + autonomía unificados) desde el Mac al VPS.
+# Uso: ./deploy.sh [app...]   (sin argumento = lae-portal)
 
 set -euo pipefail
 
@@ -8,9 +8,9 @@ VPS_HOST="lae-vps"
 VPS_BASE="/opt"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-APPS=("portal-lae" "autonomia-lae")
-if [[ $# -eq 1 ]]; then
-  APPS=("$1")
+APPS=("lae-portal")
+if [[ $# -ge 1 ]]; then
+  APPS=("$@")
 fi
 
 for app in "${APPS[@]}"; do
