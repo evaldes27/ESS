@@ -119,6 +119,7 @@ h1{font-family:'Jost',sans-serif;font-size:clamp(30px,5.5vw,44px);font-weight:60
   padding:5px 12px;border-radius:100px;white-space:nowrap;background:var(--piedra);color:var(--gris);}
 .envio-estado.en_transito{background:var(--menta);color:var(--verde);}
 .envio-estado.entregado{background:var(--verde);color:#fff;}
+.envio-estado.dentro{background:rgba(232,163,61,.18);color:#8a5a12;}
 
 .reporte-link{margin-left:auto;font-family:'Jost',sans-serif;font-size:12.5px;font-weight:500;
   color:var(--verde);text-decoration:none;white-space:nowrap;flex:none;}
@@ -206,6 +207,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
       {% if sec == 'cfe' and c %}<a href="#sec-cfe">{{ t.cfe_titulo }}</a>{% endif %}
       {% if sec == 'avance' %}<a href="#sec-avance">{{ t.avance_titulo }}</a>{% endif %}
       {% if sec == 'logistica' and p.logistica %}<a href="#sec-logistica">{{ t.logistica_titulo }}</a>{% endif %}
+      {% if sec == 'calendario' and p.calendario %}<a href="#sec-calendario">{{ t.calendario_titulo }}</a>{% endif %}
       {% if sec == 'documentos' %}<a href="#sec-documentos">{{ t.documentos_titulo }}</a>{% endif %}
       {% if sec == 'seriales' %}<a href="#sec-seriales">{{ t.seriales_titulo }}</a>{% endif %}
       {% if sec == 'sistema' and p.sistema %}<a href="#sec-sistema">{{ t.tu_sistema }}</a>{% endif %}
@@ -376,6 +378,27 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
           {% if envio.fecha_estimada %}<span class="envio-meta">{{ t.logistica_llega }}: {{ envio.fecha_estimada }}</span>{% endif %}
         </div>
         <span class="envio-estado {{ envio.estado }}">{{ t.logistica_estado[envio.estado] or envio.estado }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if sec == 'calendario' and p.calendario %}
+  {% set dentro_count = p.calendario | selectattr('dentro_casa') | list | length %}
+  <section class="sec" id="sec-calendario">
+    <div class="sechead">
+      <h2>{{ t.calendario_titulo }}</h2>
+      <span class="eyebrow">{% if dentro_count %}{{ t.calendario_resumen.format(n=dentro_count) }}{% else %}{{ t.calendario_sub }}{% endif %}</span>
+    </div>
+    <div class="docs">
+      {% for dia in p.calendario %}
+      <div class="doc envio">
+        <div class="doc-info">
+          <span class="doc-tipo">{{ dia.fecha }}</span>
+          <span class="doc-nombre">{{ dia.actividad }}</span>
+        </div>
+        <span class="envio-estado {{ 'dentro' if dia.dentro_casa else '' }}">{{ t.calendario_dentro if dia.dentro_casa else t.calendario_exterior }}</span>
       </div>
       {% endfor %}
     </div>

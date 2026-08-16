@@ -631,6 +631,13 @@ TRADUCCIONES = {
         "logistica_guia": "Guía",
         "logistica_llega": "Llega",
 
+        "calendario_titulo": "Calendario de instalación",
+        "calendario_sub": "Qué días vamos a estar en tu casa",
+        "sin_calendario": "Todavía no hay fechas programadas.",
+        "calendario_resumen": "{n} días programados dentro de tu casa",
+        "calendario_dentro": "Dentro de la casa",
+        "calendario_exterior": "Exterior",
+
         "documentos_titulo": "Documentos",
         "documentos_sub": "Contrato, planos y más",
         "documento_default": "Documento",
@@ -704,6 +711,13 @@ TRADUCCIONES = {
         "logistica_guia": "Tracking",
         "logistica_llega": "Arrives",
 
+        "calendario_titulo": "Installation calendar",
+        "calendario_sub": "Which days we'll be at your home",
+        "sin_calendario": "No dates scheduled yet.",
+        "calendario_resumen": "{n} days scheduled inside your home",
+        "calendario_dentro": "Inside your home",
+        "calendario_exterior": "Outside",
+
         "documentos_titulo": "Documents",
         "documentos_sub": "Contract, plans and more",
         "documento_default": "Document",
@@ -762,6 +776,7 @@ def orden_secciones(obra_abierta, energizado, tiene_cfe):
     if obra_abierta:
         secciones.append("avance")
         secciones.append("logistica")
+        secciones.append("calendario")
     secciones += ["documentos", "seriales", "sistema", "bitacora"]
     return secciones
 
