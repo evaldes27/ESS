@@ -16,11 +16,12 @@ Rutas:
   /mi/<token>/foto/<id>   fotos de bitácora para /mi
 """
 
+import calendar
 import json
 import os
 import time
 from collections import deque
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import requests
 from flask import Flask, abort, jsonify, redirect, render_template
@@ -423,6 +424,286 @@ def datos_vrm(cfg):
     return frescos
 
 
+# ====================================================================== CFE
+# (de monitor-luz-tulum/cfe_estimate.py + cfe_1d_estimador.html, portado a
+# Python; mismo cálculo, ahora como tarjeta resumen en vez de widget interactivo.
+# Tarifa 1D, zona Cancún/Q. Roo. Ajustar aquí si cambia el recibo real.)
+
+CFE_CICLO_MESES = 2
+CFE_GRACIA_DIAS = 4
+CFE_IMPORT_KEYS = ("Gc", "Gb")
+CFE_EXPORT_KEYS = ("Pg", "Bg")
+CFE_MESES_VERANO = (5, 6, 7, 8, 9, 10)
+CFE_CACHE_TTL = 600  # 10 min
+
+CFE_TARIFAS = {
+    "verano": [
+        ("Básica", 350, 0.961),
+        ("Intermedia 1", 800, 1.115),
+        ("Intermedia 2", 1200, 1.435),
+        ("Excedente", None, 3.833),
+    ],
+    "invierno": [
+        ("Básica", 350, 0.961),
+        ("Intermedia 1", 800, 1.115),
+        ("Intermedia 2", 1200, 1.435),
+        ("Excedente", None, 3.833),
+    ],
+}
+CFE_CARGO_FIJO = 0.0
+CFE_IVA = 0.16
+CFE_DAP = 0.05
+CFE_MINIMO = 65.0
+
+_cache_cfe = {}
+
+
+def cfe_temporada(fecha):
+    return "verano" if fecha.month in CFE_MESES_VERANO else "invierno"
+
+
+def cfe_suma_mes(fecha, meses):
+    m = fecha.month - 1 + meses
+    y = fecha.year + m // 12
+    m = m % 12 + 1
+    return date(y, m, min(fecha.day, calendar.monthrange(y, m)[1]))
+
+
+def cfe_periodo_actual(ancla, hoy):
+    inicio = ancla
+    fin = cfe_suma_mes(inicio, CFE_CICLO_MESES)
+    while fin <= hoy:
+        inicio, fin = fin, cfe_suma_mes(fin, CFE_CICLO_MESES)
+    return inicio, fin
+
+
+def cfe_vrm_kwh(vrm_id, inicio, fin):
+    params = {
+        "type": "kwh",
+        "start": int(time.mktime(inicio.timetuple())),
+        "end": int(time.mktime(fin.timetuple())),
+        "interval": "days",
+    }
+    return vrm(f"/installations/{vrm_id}/stats", params)
+
+
+def cfe_suma_clave(registros, clave):
+    total = 0.0
+    for pt in (registros.get(clave) or []):
+        try:
+            if pt[1] is not None:
+                total += float(pt[1])
+        except (TypeError, IndexError, ValueError):
+            pass
+    return total
+
+
+def cfe_suma_claves(registros, claves):
+    return sum(cfe_suma_clave(registros, k) for k in claves)
+
+
+def cfe_energia(kwh, temporada):
+    """Costo de energía por bloques (tarifa 1D), sin fijo/IVA/DAP/mínimo."""
+    total, restante = 0.0, kwh
+    prev_limite = 0
+    for _nombre, limite, precio in CFE_TARIFAS[temporada]:
+        tope = limite if limite is not None else float("inf")
+        en_bloque = max(0.0, min(kwh, tope) - prev_limite)
+        total += en_bloque * precio
+        prev_limite = tope
+    return total
+
+
+def cfe_total(kwh, temporada):
+    energia = cfe_energia(kwh, temporada)
+    iva = (energia + CFE_CARGO_FIJO) * CFE_IVA
+    dap = energia * CFE_DAP
+    calculado = energia + CFE_CARGO_FIJO + iva + dap
+    return max(calculado, CFE_MINIMO)
+
+
+def construir_cfe(cfg):
+    vrm_id = cfg["vrm_id"]
+    bolsa = float(cfg["cfe_bolsa"])
+    ancla = date.fromisoformat(cfg["cfe_ancla"])
+    hoy = datetime.now(TZ).date()
+
+    inicio, fin = cfe_periodo_actual(ancla, hoy)
+    dias_transcurridos = max((hoy - inicio).days, 1)
+    dias_totales = max((fin - inicio).days, dias_transcurridos)
+    temporada = cfe_temporada(hoy)
+
+    if dias_transcurridos <= CFE_GRACIA_DIAS:
+        return {
+            "recien_empezo": True,
+            "temporada": temporada,
+            "periodo": {"dias_transcurridos": dias_transcurridos, "dias_totales": dias_totales},
+        }
+
+    payload = cfe_vrm_kwh(vrm_id, inicio, hoy + timedelta(days=1))
+    registros = payload.get("records") or {}
+    importado = cfe_suma_claves(registros, CFE_IMPORT_KEYS)
+    exportado = cfe_suma_claves(registros, CFE_EXPORT_KEYS)
+    neto_proyectado = (importado - exportado) / dias_transcurridos * dias_totales
+
+    if neto_proyectado >= 0:
+        bolsa_despues = max(0.0, bolsa - neto_proyectado)
+    else:
+        bolsa_despues = bolsa + (-neto_proyectado)
+    kwh_facturado = max(0.0, neto_proyectado - bolsa)
+
+    return {
+        "recien_empezo": False,
+        "temporada": temporada,
+        "neto_proyectado": round(neto_proyectado, 1),
+        "bolsa": round(bolsa, 1),
+        "bolsa_despues": round(bolsa_despues, 1),
+        "kwh_facturado": round(kwh_facturado, 1),
+        "total": round(cfe_total(kwh_facturado, temporada), 2),
+        "periodo": {"dias_transcurridos": dias_transcurridos, "dias_totales": dias_totales},
+    }
+
+
+def datos_cfe(cfg):
+    vrm_id = cfg["vrm_id"]
+    ahora = time.time()
+    hit = _cache_cfe.get(vrm_id)
+    if hit and ahora - hit[0] < CFE_CACHE_TTL:
+        return hit[1]
+    frescos = construir_cfe(cfg)
+    _cache_cfe[vrm_id] = (ahora, frescos)
+    return frescos
+
+
+# =============================================================== idiomas
+# Solo interfaz (títulos, botones, estados). Los datos que llegan de monday
+# (nombres de tarea, notas de bitácora) los escribe el equipo en sitio en
+# español y se muestran tal cual, sin traducir.
+
+TRADUCCIONES = {
+    "es": {
+        "tu_proyecto": "Tu proyecto",
+        "autonomia_titulo": "Autonomía en vivo",
+        "actualizado_a_las": "Actualizado a las {hora}",
+        "bateria_cargando": "Tu batería se está cargando",
+        "sol_cargando": "El sol está cargando tu batería en este momento.",
+        "bateria_cargando_simple": "Tu batería está cargando.",
+        "queda_energia": "Te queda de energía",
+        "hasta_las": "Hasta las {hora}, con lo que estás usando ahorita.",
+        "bateria_pct": "Batería {pct}%",
+        "llena": "Llena",
+        "tu_sistema": "Tu sistema",
+        "bateria_sin_consumo": "Batería cargada. No hay consumo suficiente para calcular el tiempo restante.",
+        "estas_usando": "Estás usando",
+        "bateria": "Batería",
+        "del_sol": "Del sol",
+        "luz_baja_titulo": "La luz de la colonia está muy baja",
+        "luz_baja_texto": "Hay corriente en la calle, pero llega tan baja que tu sistema la está "
+                          "bloqueando para no dañar tus aparatos. Tu casa está funcionando con las baterías.",
+        "luz_caida_titulo": "No hay luz de la calle",
+        "luz_caida_texto": "Tu casa está funcionando con las baterías. Te avisamos aquí cuando regrese.",
+
+        "cfe_titulo": "Tu próximo recibo de CFE",
+        "cfe_temporada": {"verano": "Verano", "invierno": "Invierno"},
+        "cfe_recien_empezo": "El periodo apenas comenzó, tu estimado estará listo en unos días.",
+        "cfe_credito_cubre": "{bolsa} kWh de crédito — cubre todo tu consumo, solo pagas el mínimo.",
+        "cfe_banco_aplicado": "{bolsa} kWh de banco aplicados · {facturado} kWh facturados · día {dia} de {dias_totales}",
+        "cfe_estimado": "Estimado del periodo",
+
+        "avance_titulo": "Avance de obra",
+        "tareas_conteo": "{hechas} de {total} tareas",
+        "tareas_terminadas": "{hechas} de {total} tareas terminadas",
+        "sin_datos": "Sin datos por ahora",
+        "sin_avance": "Todavía no hay datos de avance disponibles.",
+        "total_proyecto": "Total del proyecto",
+        "pagado": "Pagado",
+        "saldo_pendiente": "Saldo pendiente",
+
+        "documentos_titulo": "Documentos",
+        "documentos_sub": "Contrato, planos y más",
+        "documento_default": "Documento",
+        "ver": "Ver",
+        "sin_documentos": "Todavía no hay documentos disponibles aquí.",
+
+        "seriales_titulo": "Seriales y garantías",
+        "seriales_sub": "Guarda esto para cuando lo necesites",
+        "col_equipo": "Equipo",
+        "col_modelo": "Modelo",
+        "col_serie": "Serie",
+        "col_garantia": "Garantía hasta",
+        "sin_seriales": "Todavía no hay seriales registrados para este sistema.",
+
+        "bitacora_titulo": "Bitácora",
+        "bitacora_sub": "Lo que pasó en sitio",
+        "sin_bitacora": "Todavía no hay entradas. Aquí van a aparecer las fotos y notas de cada avance en sitio.",
+
+        "equipo_de": "Equipo de",
+        "pie_empresa": "Los Amigos Energy · Solar Energy Lat, S.A. de C.V.",
+        "pie_privado": "Esta página es privada. No la compartas fuera de tu proyecto.",
+    },
+    "en": {
+        "tu_proyecto": "Your project",
+        "autonomia_titulo": "Live autonomy",
+        "actualizado_a_las": "Updated at {hora}",
+        "bateria_cargando": "Your battery is charging",
+        "sol_cargando": "The sun is charging your battery right now.",
+        "bateria_cargando_simple": "Your battery is charging.",
+        "queda_energia": "Energy remaining",
+        "hasta_las": "Until {hora}, at your current usage.",
+        "bateria_pct": "Battery {pct}%",
+        "llena": "Full",
+        "tu_sistema": "Your system",
+        "bateria_sin_consumo": "Battery full. Not enough consumption to calculate remaining time.",
+        "estas_usando": "You're using",
+        "bateria": "Battery",
+        "del_sol": "From the sun",
+        "luz_baja_titulo": "Neighborhood power is too low",
+        "luz_baja_texto": "There's power on the street, but it's arriving too low, so your system is "
+                          "blocking it to protect your appliances. Your home is running on battery.",
+        "luz_caida_titulo": "No power from the grid",
+        "luz_caida_texto": "Your home is running on battery. We'll show it here when it's back.",
+
+        "cfe_titulo": "Your next CFE bill",
+        "cfe_temporada": {"verano": "Summer", "invierno": "Winter"},
+        "cfe_recien_empezo": "The billing period just started — your estimate will be ready in a few days.",
+        "cfe_credito_cubre": "{bolsa} kWh credit — fully covers your usage, minimum bill only.",
+        "cfe_banco_aplicado": "{bolsa} kWh bank applied · {facturado} kWh billed · day {dia} of {dias_totales}",
+        "cfe_estimado": "Period estimate",
+
+        "avance_titulo": "Construction progress",
+        "tareas_conteo": "{hechas} of {total} tasks",
+        "tareas_terminadas": "{hechas} of {total} tasks completed",
+        "sin_datos": "No data yet",
+        "sin_avance": "No progress data available yet.",
+        "total_proyecto": "Project total",
+        "pagado": "Paid",
+        "saldo_pendiente": "Balance due",
+
+        "documentos_titulo": "Documents",
+        "documentos_sub": "Contract, plans and more",
+        "documento_default": "Document",
+        "ver": "View",
+        "sin_documentos": "No documents available here yet.",
+
+        "seriales_titulo": "Serials and warranties",
+        "seriales_sub": "Save this for when you need it",
+        "col_equipo": "Equipment",
+        "col_modelo": "Model",
+        "col_serie": "Serial",
+        "col_garantia": "Warranty until",
+        "sin_seriales": "No serial numbers registered for this system yet.",
+
+        "bitacora_titulo": "Log",
+        "bitacora_sub": "What happened on site",
+        "sin_bitacora": "No entries yet. Photos and notes from each site update will appear here.",
+
+        "equipo_de": "Equipment by",
+        "pie_empresa": "Los Amigos Energy · Solar Energy Lat, S.A. de C.V.",
+        "pie_privado": "This page is private. Please don't share it outside your project.",
+    },
+}
+
+
 # ============================================================ /mi (nuevo)
 
 # CLIENTES mapea token secreto -> config unificada del cliente. Ruta /mi/<token>.
@@ -440,11 +721,13 @@ def datos_vrm(cfg):
 CLIENTES = json.loads(os.environ.get("CLIENTES", "{}"))
 
 
-def orden_secciones(obra_abierta, energizado):
+def orden_secciones(obra_abierta, energizado, tiene_cfe):
     """Las secciones que siempre existen no cambian; solo cambia cuál va primero."""
     secciones = []
     if energizado:
         secciones.append("autonomia")
+        if tiene_cfe:
+            secciones.append("cfe")
     if obra_abierta:
         secciones.append("avance")
     secciones += ["documentos", "seriales", "sistema", "bitacora"]
@@ -543,13 +826,30 @@ def mi(token):
             hit = _cache_vrm.get(cfg["vrm_id"])
             v = hit[1] if hit else None
 
+    tiene_cfe = energizado and "cfe_bolsa" in cfg and "cfe_ancla" in cfg
+    c = None
+    if tiene_cfe:
+        try:
+            c = datos_cfe(cfg)
+        except Exception:
+            app.logger.exception("Falló la lectura de CFE para /mi/%s", token)
+            hit = _cache_cfe.get(cfg["vrm_id"])
+            c = hit[1] if hit else None
+
+    lang = cfg.get("idioma", "es")
+    if lang not in TRADUCCIONES:
+        lang = "es"
+
     return render_template(
         "mi.html",
         p=cfg,
         m=m,
         v=v,
+        c=c,
         token=token,
-        secciones=orden_secciones(obra_abierta, energizado),
+        lang=lang,
+        t=TRADUCCIONES[lang],
+        secciones=orden_secciones(obra_abierta, energizado, tiene_cfe),
     )
 
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="{{ lang }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -174,7 +174,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
 <header class="top">
   <div class="topin">
     <img src="/mi-static/logo-los-amigos.png" alt="Los Amigos Energy" class="marca-logo">
-    <span>Tu proyecto</span>
+    <span>{{ t.tu_proyecto }}</span>
   </div>
 </header>
 
@@ -188,7 +188,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
         <p class="sub">{{ p.cliente }}</p>
       </div>
       {% if m %}
-      <div class="chip"><i></i>{{ m.hechas }} de {{ m.total }} tareas terminadas</div>
+      <div class="chip"><i></i>{{ t.tareas_terminadas.format(hechas=m.hechas, total=m.total) }}</div>
       {% endif %}
     </div>
   </section>
@@ -198,51 +198,75 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
   {% if sec == 'autonomia' and v %}
   <section class="sec">
     <div class="sechead">
-      <h2>Autonomía en vivo</h2>
-      <span class="eyebrow">Actualizado a las {{ v.actualizado }}</span>
+      <h2>{{ t.autonomia_titulo }}</h2>
+      <span class="eyebrow">{{ t.actualizado_a_las.format(hora=v.actualizado) }}</span>
     </div>
     <div class="vivo" id="vivo">
       {% if v.cargando %}
-        <div class="rotulo">Tu batería se está cargando</div>
+        <div class="rotulo">{{ t.bateria_cargando }}</div>
         <div class="grande" id="grande">{{ v.soc }}%</div>
         <p class="hasta">
-          {% if v.solar > 100 %}El sol está cargando tu batería en este momento.
-          {% else %}Tu batería está cargando.{% endif %}
+          {% if v.solar > 100 %}{{ t.sol_cargando }}
+          {% else %}{{ t.bateria_cargando_simple }}{% endif %}
         </p>
       {% elif v.horas_txt %}
-        <div class="rotulo">Te queda de energía</div>
+        <div class="rotulo">{{ t.queda_energia }}</div>
         <div class="grande {% if v.horas and v.horas < 3 %}poco{% endif %}" id="grande">{{ v.horas_txt }}</div>
         <p class="hasta">
-          {% if v.hasta %}Hasta las <strong>{{ v.hasta }}</strong>, con lo que estás usando ahorita.{% endif %}
+          {% if v.hasta %}{{ t.hasta_las.format(hora="<strong>%s</strong>"|format(v.hasta))|safe }}{% endif %}
         </p>
         <div class="barra"><span id="barra" style="width: {{ v.soc }}%"></span></div>
-        <div class="escala"><span>Batería {{ v.soc }}%</span><span>Llena</span></div>
+        <div class="escala"><span>{{ t.bateria_pct.format(pct=v.soc) }}</span><span>{{ t.llena }}</span></div>
       {% else %}
-        <div class="rotulo">Tu sistema</div>
+        <div class="rotulo">{{ t.tu_sistema }}</div>
         <div class="grande" id="grande">{{ v.soc }}%</div>
-        <p class="hasta">Batería cargada. No hay consumo suficiente para calcular el tiempo restante.</p>
+        <p class="hasta">{{ t.bateria_sin_consumo }}</p>
       {% endif %}
 
       <div class="datos">
-        <div><b id="consumo">{{ v.consumo }} W</b><span>Estás usando</span></div>
-        <div><b id="soc">{{ v.soc }}%</b><span>Batería</span></div>
-        {% if v.solar > 50 %}<div><b id="solar">{{ v.solar }} W</b><span>Del sol</span></div>{% endif %}
+        <div><b id="consumo">{{ v.consumo }} W</b><span>{{ t.estas_usando }}</span></div>
+        <div><b id="soc">{{ v.soc }}%</b><span>{{ t.bateria }}</span></div>
+        {% if v.solar > 50 %}<div><b id="solar">{{ v.solar }} W</b><span>{{ t.del_sol }}</span></div>{% endif %}
       </div>
 
       {% if v.red == 'rechazada' %}
       <div class="aviso">
-        <b>La luz de la colonia está muy baja</b>
-        Hay corriente en la calle, pero llega tan baja que tu sistema la está bloqueando
-        para no dañar tus aparatos. Tu casa está funcionando con las baterías.
+        <b>{{ t.luz_baja_titulo }}</b>
+        {{ t.luz_baja_texto }}
       </div>
       {% elif v.red == 'caida' %}
       <div class="aviso">
-        <b>No hay luz de la calle</b>
-        Tu casa está funcionando con las baterías. Te avisamos aquí cuando regrese.
+        <b>{{ t.luz_caida_titulo }}</b>
+        {{ t.luz_caida_texto }}
       </div>
       {% endif %}
 
-      <div class="pie">Actualizado a las <span id="hora">{{ v.actualizado }}</span></div>
+      <div class="pie">{{ t.actualizado_a_las.format(hora='<span id="hora">%s</span>'|format(v.actualizado))|safe }}</div>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if sec == 'cfe' and c %}
+  <section class="sec">
+    <div class="sechead">
+      <h2>{{ t.cfe_titulo }}</h2>
+      <span class="eyebrow">{{ t.cfe_temporada[c.temporada] }}</span>
+    </div>
+    <div class="vivo">
+      {% if c.recien_empezo %}
+        <div class="rotulo">{{ t.cfe_estimado }}</div>
+        <p class="hasta" style="margin-top:14px">{{ t.cfe_recien_empezo }}</p>
+      {% else %}
+        <div class="rotulo">{{ t.cfe_estimado }}</div>
+        <div class="grande">${{ "{:,.0f}".format(c.total) }}</div>
+        <p class="hasta">
+          {% if c.kwh_facturado <= 0 %}
+            {{ t.cfe_credito_cubre.format(bolsa=c.bolsa|round|int) }}
+          {% else %}
+            {{ t.cfe_banco_aplicado.format(bolsa=c.bolsa|round|int, facturado=c.kwh_facturado|round|int, dia=c.periodo.dias_transcurridos, dias_totales=c.periodo.dias_totales) }}
+          {% endif %}
+        </p>
+      {% endif %}
     </div>
   </section>
   {% endif %}
@@ -250,8 +274,8 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
   {% if sec == 'avance' %}
   <section class="sec">
     <div class="sechead">
-      <h2>Avance de obra</h2>
-      <span class="eyebrow">{% if m %}{{ m.hechas }} de {{ m.total }} tareas{% else %}Sin datos por ahora{% endif %}</span>
+      <h2>{{ t.avance_titulo }}</h2>
+      <span class="eyebrow">{% if m %}{{ t.tareas_conteo.format(hechas=m.hechas, total=m.total) }}{% else %}{{ t.sin_datos }}{% endif %}</span>
     </div>
     {% if m %}
     <div class="cond">
@@ -271,11 +295,11 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
         {% for f in m.fases %}
         <div class="panel" id="fase-{{ loop.index0 }}" hidden>
           <div class="eyebrow" style="margin-bottom:6px">{{ f.nombre }}</div>
-          {% for t in f.visibles %}
-          <div class="tarea {{ t.estado }}">
-            <span class="punto {{ t.estado }}"></span>
-            <span class="tnombre">{{ t.nombre }}</span>
-            <span class="tmeta">{{ t.fechas or "—" }}</span>
+          {% for tarea in f.visibles %}
+          <div class="tarea {{ tarea.estado }}">
+            <span class="punto {{ tarea.estado }}"></span>
+            <span class="tnombre">{{ tarea.nombre }}</span>
+            <span class="tmeta">{{ tarea.fechas or "—" }}</span>
           </div>
           {% endfor %}
         </div>
@@ -283,16 +307,16 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
       </div>
     </div>
     {% else %}
-    <div class="vacio"><p style="margin-top:0">Todavía no hay datos de avance disponibles.</p></div>
+    <div class="vacio"><p style="margin-top:0">{{ t.sin_avance }}</p></div>
     {% endif %}
 
     {% if p.saldo %}
     <div class="cols" style="grid-template-columns:1fr">
       <div class="card">
         <dl style="margin:0">
-          <div class="fila"><dt>Total del proyecto</dt><dd>${{ "{:,.0f}".format(p.saldo.total) }}</dd></div>
-          <div class="fila"><dt>Pagado</dt><dd>${{ "{:,.0f}".format(p.saldo.pagado) }}</dd></div>
-          <div class="fila"><dt>Saldo pendiente</dt><dd>${{ "{:,.0f}".format(p.saldo.total - p.saldo.pagado) }}</dd></div>
+          <div class="fila"><dt>{{ t.total_proyecto }}</dt><dd>${{ "{:,.0f}".format(p.saldo.total) }}</dd></div>
+          <div class="fila"><dt>{{ t.pagado }}</dt><dd>${{ "{:,.0f}".format(p.saldo.pagado) }}</dd></div>
+          <div class="fila"><dt>{{ t.saldo_pendiente }}</dt><dd>${{ "{:,.0f}".format(p.saldo.total - p.saldo.pagado) }}</dd></div>
         </dl>
       </div>
     </div>
@@ -303,23 +327,23 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
   {% if sec == 'documentos' %}
   <section class="sec">
     <div class="sechead">
-      <h2>Documentos</h2>
-      <span class="eyebrow">Contrato, planos y más</span>
+      <h2>{{ t.documentos_titulo }}</h2>
+      <span class="eyebrow">{{ t.documentos_sub }}</span>
     </div>
     {% if p.documentos %}
     <div class="docs">
       {% for doc in p.documentos %}
       <div class="doc">
         <div class="doc-info">
-          <span class="doc-tipo">{{ doc.tipo or "Documento" }}</span>
+          <span class="doc-tipo">{{ doc.tipo or t.documento_default }}</span>
           <span class="doc-nombre">{{ doc.nombre }}</span>
         </div>
-        <a href="{{ doc.url }}" target="_blank" rel="noopener">Ver</a>
+        <a href="{{ doc.url }}" target="_blank" rel="noopener">{{ t.ver }}</a>
       </div>
       {% endfor %}
     </div>
     {% else %}
-    <div class="vacio"><p style="margin-top:0">Todavía no hay documentos disponibles aquí.</p></div>
+    <div class="vacio"><p style="margin-top:0">{{ t.sin_documentos }}</p></div>
     {% endif %}
   </section>
   {% endif %}
@@ -327,14 +351,14 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
   {% if sec == 'seriales' %}
   <section class="sec">
     <div class="sechead">
-      <h2>Seriales y garantías</h2>
-      <span class="eyebrow">Guarda esto para cuando lo necesites</span>
+      <h2>{{ t.seriales_titulo }}</h2>
+      <span class="eyebrow">{{ t.seriales_sub }}</span>
     </div>
     {% if p.seriales %}
     <div class="tabla-wrap">
       <table class="tabla">
         <thead>
-          <tr><th>Equipo</th><th>Modelo</th><th>Serie</th><th>Garantía hasta</th></tr>
+          <tr><th>{{ t.col_equipo }}</th><th>{{ t.col_modelo }}</th><th>{{ t.col_serie }}</th><th>{{ t.col_garantia }}</th></tr>
         </thead>
         <tbody>
           {% for s in p.seriales %}
@@ -349,7 +373,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
       </table>
     </div>
     {% else %}
-    <div class="vacio"><p style="margin-top:0">Todavía no hay seriales registrados para este sistema.</p></div>
+    <div class="vacio"><p style="margin-top:0">{{ t.sin_seriales }}</p></div>
     {% endif %}
   </section>
   {% endif %}
@@ -357,7 +381,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
   {% if sec == 'sistema' and p.sistema %}
   <section class="sec">
     <div class="sechead">
-      <h2>Tu sistema</h2>
+      <h2>{{ t.tu_sistema }}</h2>
       <span class="eyebrow">{{ p.sistema.topologia or "" }}</span>
     </div>
     <div class="cols">
@@ -382,8 +406,8 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
   {% if sec == 'bitacora' %}
   <section class="sec">
     <div class="sechead">
-      <h2>Bitácora</h2>
-      <span class="eyebrow">Lo que pasó en sitio</span>
+      <h2>{{ t.bitacora_titulo }}</h2>
+      <span class="eyebrow">{{ t.bitacora_sub }}</span>
     </div>
     {% if m and m.bitacora %}
     <div>
@@ -406,7 +430,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
     </div>
     {% else %}
     <div class="vacio">
-      <p style="margin-top:0">Todavía no hay entradas. Aquí van a aparecer las fotos y notas de cada avance en sitio.</p>
+      <p style="margin-top:0">{{ t.sin_bitacora }}</p>
     </div>
     {% endif %}
   </section>
@@ -416,7 +440,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
 
   {% if p.marcas %}
   <div class="marcas">
-    <span class="eyebrow">Equipo de</span>
+    <span class="eyebrow">{{ t.equipo_de }}</span>
     {% for marca in p.marcas %}
       {% if marca == 'victron' %}
       <img src="/mi-static/logo-victron.png" alt="Victron Energy" class="marca-logo-chica victron">
@@ -428,8 +452,8 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
   {% endif %}
 
   <div class="pie">
-    <span>Los Amigos Energy · Solar Energy Lat, S.A. de C.V.</span>
-    <span>Esta página es privada. No la compartas fuera de tu proyecto.</span>
+    <span>{{ t.pie_empresa }}</span>
+    <span>{{ t.pie_privado }}</span>
   </div>
 
 </div>
