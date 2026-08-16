@@ -14,10 +14,21 @@
   --sol:#E8A33D; --linea:#C6D0C8; --menta:#DEE9E1; --gris:#5B6B62; --rojo:#D9705A;
 }
 *{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
 body{margin:0;background:var(--piedra);color:var(--tinta);
   font-family:'Libre Franklin',-apple-system,system-ui,sans-serif;line-height:1.55;
   -webkit-font-smoothing:antialiased;}
 .wrap{max-width:1000px;margin:0 auto;padding:0 22px 110px;}
+
+.indice{position:sticky;top:0;z-index:6;background:#fff;border-bottom:1px solid var(--linea);}
+.indice-in{max-width:1000px;margin:0 auto;padding:0 22px;display:flex;gap:4px;
+  overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.indice a{flex:none;font-family:'Jost',sans-serif;font-size:12.5px;font-weight:500;
+  color:var(--gris);padding:13px 11px;text-decoration:none;border-bottom:2px solid transparent;
+  white-space:nowrap;}
+.indice a:hover{color:var(--verde);}
+.indice a.activo{color:var(--verde);border-bottom-color:var(--verde);}
+.indice::-webkit-scrollbar{display:none;}
 .eyebrow{font-family:'Jost',sans-serif;font-size:11px;font-weight:600;letter-spacing:.16em;
   text-transform:uppercase;color:var(--gris);}
 h2{font-family:'Jost',sans-serif;font-size:19px;font-weight:600;letter-spacing:-.01em;margin:0;}
@@ -78,7 +89,7 @@ h1{font-family:'Jost',sans-serif;font-size:clamp(30px,5.5vw,44px);font-weight:60
 .tarea.pendiente .tnombre{color:#8C9A92;}
 .tmeta{font-size:12px;color:var(--gris);white-space:nowrap;}
 
-.sec{padding-top:48px;}
+.sec{padding-top:48px;scroll-margin-top:52px;}
 .sechead{display:flex;align-items:baseline;gap:14px;padding-bottom:16px;border-bottom:1px solid var(--linea);}
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px;}
 .card{background:#fff;border:1px solid var(--linea);border-radius:5px;padding:20px 22px;}
@@ -178,6 +189,20 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
   </div>
 </header>
 
+<nav class="indice" aria-label="Secciones">
+  <div class="indice-in">
+    {% for sec in secciones %}
+      {% if sec == 'autonomia' and v %}<a href="#sec-autonomia">{{ t.autonomia_titulo }}</a>{% endif %}
+      {% if sec == 'cfe' and c %}<a href="#sec-cfe">{{ t.cfe_titulo }}</a>{% endif %}
+      {% if sec == 'avance' %}<a href="#sec-avance">{{ t.avance_titulo }}</a>{% endif %}
+      {% if sec == 'documentos' %}<a href="#sec-documentos">{{ t.documentos_titulo }}</a>{% endif %}
+      {% if sec == 'seriales' %}<a href="#sec-seriales">{{ t.seriales_titulo }}</a>{% endif %}
+      {% if sec == 'sistema' and p.sistema %}<a href="#sec-sistema">{{ t.tu_sistema }}</a>{% endif %}
+      {% if sec == 'bitacora' %}<a href="#sec-bitacora">{{ t.bitacora_titulo }}</a>{% endif %}
+    {% endfor %}
+  </div>
+</nav>
+
 <div class="wrap">
 
   <section class="head">
@@ -196,7 +221,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
   {% for sec in secciones %}
 
   {% if sec == 'autonomia' and v %}
-  <section class="sec">
+  <section class="sec" id="sec-autonomia">
     <div class="sechead">
       <h2>{{ t.autonomia_titulo }}</h2>
       <span class="eyebrow">{{ t.actualizado_a_las.format(hora=v.actualizado) }}</span>
@@ -247,7 +272,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
   {% endif %}
 
   {% if sec == 'cfe' and c %}
-  <section class="sec">
+  <section class="sec" id="sec-cfe">
     <div class="sechead">
       <h2>{{ t.cfe_titulo }}</h2>
       <span class="eyebrow">{{ t.cfe_temporada[c.temporada] }}</span>
@@ -272,7 +297,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
   {% endif %}
 
   {% if sec == 'avance' %}
-  <section class="sec">
+  <section class="sec" id="sec-avance">
     <div class="sechead">
       <h2>{{ t.avance_titulo }}</h2>
       <span class="eyebrow">{% if m %}{{ t.tareas_conteo.format(hechas=m.hechas, total=m.total) }}{% else %}{{ t.sin_datos }}{% endif %}</span>
@@ -325,7 +350,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
   {% endif %}
 
   {% if sec == 'documentos' %}
-  <section class="sec">
+  <section class="sec" id="sec-documentos">
     <div class="sechead">
       <h2>{{ t.documentos_titulo }}</h2>
       <span class="eyebrow">{{ t.documentos_sub }}</span>
@@ -349,7 +374,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
   {% endif %}
 
   {% if sec == 'seriales' %}
-  <section class="sec">
+  <section class="sec" id="sec-seriales">
     <div class="sechead">
       <h2>{{ t.seriales_titulo }}</h2>
       <span class="eyebrow">{{ t.seriales_sub }}</span>
@@ -379,7 +404,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
   {% endif %}
 
   {% if sec == 'sistema' and p.sistema %}
-  <section class="sec">
+  <section class="sec" id="sec-sistema">
     <div class="sechead">
       <h2>{{ t.tu_sistema }}</h2>
       <span class="eyebrow">{{ p.sistema.topologia or "" }}</span>
@@ -404,7 +429,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
   {% endif %}
 
   {% if sec == 'bitacora' %}
-  <section class="sec">
+  <section class="sec" id="sec-bitacora">
     <div class="sechead">
       <h2>{{ t.bitacora_titulo }}</h2>
       <span class="eyebrow">{{ t.bitacora_sub }}</span>
@@ -513,6 +538,29 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
   setInterval(jala, 60000);
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden) jala();
+  });
+})();
+
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('.indice a'));
+  if (!links.length || !window.IntersectionObserver) return;
+  var porId = {};
+  links.forEach(function (a) { porId[a.getAttribute('href').slice(1)] = a; });
+
+  var obs = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      var link = porId[entry.target.id];
+      if (!link) return;
+      if (entry.isIntersecting) {
+        links.forEach(function (a) { a.classList.remove('activo'); });
+        link.classList.add('activo');
+      }
+    });
+  }, { rootMargin: '-45% 0px -50% 0px' });
+
+  Object.keys(porId).forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) obs.observe(el);
   });
 })();
 </script>
