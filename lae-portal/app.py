@@ -16,15 +16,20 @@ Rutas:
   /mi/<token>/foto/<id>   fotos de bitácora para /mi
 """
 
+import base64
 import calendar
 import json
 import os
 import time
 from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta, timezone
+from io import BytesIO
 
 import requests
-from flask import Flask, abort, jsonify, redirect, render_template
+from flask import Flask, Response, abort, jsonify, redirect, render_template
+from PIL import Image, ImageOps
+from xhtml2pdf import pisa
 
 # static_url_path distinto de "/static": ese prefijo ya lo usa monitor-luz-tulum
 # detrás del mismo nginx, y "/static/" a secas les pisaría sus imágenes.
@@ -640,6 +645,12 @@ TRADUCCIONES = {
         "equipo_de": "Equipo de",
         "pie_empresa": "Los Amigos Energy · Solar Energy Lat, S.A. de C.V.",
         "pie_privado": "Esta página es privada. No la compartas fuera de tu proyecto.",
+
+        "reporte_pdf": "Descargar reporte PDF",
+        "reporte_titulo": "Reporte de proyecto",
+        "reporte_generado": "Generado el {fecha}",
+        "reporte_pie": "Este documento es un respaldo generado automáticamente a partir del portal en línea. "
+                       "Los datos reflejan el estado del proyecto al momento de generarlo.",
     },
     "en": {
         "tu_proyecto": "Your project",
@@ -700,6 +711,12 @@ TRADUCCIONES = {
         "equipo_de": "Equipment by",
         "pie_empresa": "Los Amigos Energy · Solar Energy Lat, S.A. de C.V.",
         "pie_privado": "This page is private. Please don't share it outside your project.",
+
+        "reporte_pdf": "Download PDF report",
+        "reporte_titulo": "Project report",
+        "reporte_generado": "Generated on {fecha}",
+        "reporte_pie": "This document is an automatically generated backup of the online portal. "
+                       "Data reflects the project's state at the time it was generated.",
     },
 }
 
@@ -879,6 +896,127 @@ def mi_foto(token, asset_id):
     if not url:
         abort(404)
     return redirect(url)
+
+
+# --------------------------------------------------------- reporte PDF
+# "El portal muere, el PDF no": una instantánea descargable que no depende
+# de que monday/VRM sigan respondiendo. Se genera al vuelo, no se guarda.
+#
+# Las fotos de monday vienen a resolución de cámara (varios MB c/u); sin
+# comprimir, un reporte con fotos pesaba +100MB y tardaba ~50s. Se redimensionan
+# y se bajan en paralelo para que quede ligero y dentro del timeout de gunicorn.
+
+REPORTE_FOTOS_MAX = 16
+REPORTE_FOTO_ANCHO = 900
+REPORTE_FOTO_CALIDAD = 70
+
+
+def foto_base64(asset_id):
+    url = resolver_foto(asset_id)
+    if not url:
+        return None
+    r = requests.get(url, timeout=20)
+    r.raise_for_status()
+
+    img = Image.open(BytesIO(r.content))
+    img = ImageOps.exif_transpose(img).convert("RGB")
+    if img.width > REPORTE_FOTO_ANCHO:
+        alto = round(img.height * REPORTE_FOTO_ANCHO / img.width)
+        img = img.resize((REPORTE_FOTO_ANCHO, alto), Image.LANCZOS)
+
+    salida = BytesIO()
+    img.save(salida, format="JPEG", quality=REPORTE_FOTO_CALIDAD, optimize=True)
+    return "data:image/jpeg;base64," + base64.b64encode(salida.getvalue()).decode("ascii")
+
+
+def _foto_o_none(foto):
+    try:
+        return foto_base64(foto["id"])
+    except Exception:
+        app.logger.exception("No se pudo incrustar la foto %s en el reporte", foto["id"])
+        return None
+
+
+def limpio_pdf(texto):
+    """El equipo en sitio a veces usa emoji en monday (➡️, ✅...); la fuente del
+    PDF no los tiene y salen como cajas rotas. Se quitan solo para el PDF —
+    en la página web se ven bien y no se tocan."""
+    if not texto:
+        return texto
+    return texto.encode("latin-1", errors="ignore").decode("latin-1")
+
+
+app.jinja_env.filters["limpio_pdf"] = limpio_pdf
+
+
+def construir_reporte(cfg, m, lang):
+    bitacora = [dict(b, fotos=[]) for b in (m["bitacora"] if m else [])]
+
+    # Selecciona por adelantado cuáles fotos entran en el tope, preservando
+    # el orden de la bitácora, para poder bajarlas todas en paralelo.
+    pendientes = []
+    fotos_restantes = REPORTE_FOTOS_MAX
+    for i, b in enumerate(m["bitacora"] if m else []):
+        for foto in b.get("fotos") or []:
+            if fotos_restantes <= 0:
+                break
+            pendientes.append((i, foto))
+            fotos_restantes -= 1
+
+    if pendientes:
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            resultados = pool.map(lambda par: _foto_o_none(par[1]), pendientes)
+        for (i, foto), data_uri in zip(pendientes, resultados):
+            if data_uri:
+                bitacora[i]["fotos"].append({"nombre": foto["nombre"], "src": data_uri})
+
+    with open(os.path.join(app.root_path, "static", "logo-los-amigos.png"), "rb") as f:
+        logo = "data:image/png;base64," + base64.b64encode(f.read()).decode("ascii")
+
+    return {
+        "p": cfg,
+        "m": m,
+        "bitacora": bitacora,
+        "t": TRADUCCIONES[lang],
+        "lang": lang,
+        "logo": logo,
+        "fecha": datetime.now(TZ).strftime("%d/%m/%Y"),
+    }
+
+
+@app.route("/mi/<token>/reporte.pdf")
+def mi_reporte(token):
+    cfg = CLIENTES.get(token)
+    if not cfg:
+        abort(404)
+
+    m = None
+    if "board_id" in cfg:
+        try:
+            m = datos_monday(cfg["board_id"])
+        except Exception:
+            app.logger.exception("Falló la lectura de monday para el reporte de /mi/%s", token)
+            hit = _cache_monday.get(cfg["board_id"])
+            m = hit[1] if hit else None
+
+    lang = cfg.get("idioma", "es")
+    if lang not in TRADUCCIONES:
+        lang = "es"
+
+    html = render_template("reporte_pdf.html", **construir_reporte(cfg, m, lang))
+
+    buffer = BytesIO()
+    resultado = pisa.CreatePDF(html, dest=buffer)
+    if resultado.err:
+        app.logger.error("Error generando el PDF para /mi/%s", token)
+        abort(500)
+
+    nombre = (cfg.get("nombre") or "proyecto").replace(" ", "-")
+    return Response(
+        buffer.getvalue(),
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="reporte-{nombre}.pdf"'},
+    )
 
 
 @app.route("/healthz")

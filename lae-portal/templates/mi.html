@@ -114,6 +114,10 @@ h1{font-family:'Jost',sans-serif;font-size:clamp(30px,5.5vw,44px);font-weight:60
   text-transform:uppercase;color:var(--gris);}
 .doc-nombre{font-size:14px;}
 
+.reporte-link{margin-left:auto;font-family:'Jost',sans-serif;font-size:12.5px;font-weight:500;
+  color:var(--verde);text-decoration:none;white-space:nowrap;flex:none;}
+.reporte-link:hover{text-decoration:underline;}
+
 .tabla-wrap{margin-top:20px;overflow-x:auto;background:#fff;border:1px solid var(--linea);border-radius:5px;}
 .tabla{width:100%;border-collapse:collapse;font-size:13.5px;white-space:nowrap;}
 .tabla th{text-align:left;font-family:'Jost',sans-serif;font-size:10.5px;font-weight:600;
@@ -354,6 +358,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--verde);outline-offs
     <div class="sechead">
       <h2>{{ t.documentos_titulo }}</h2>
       <span class="eyebrow">{{ t.documentos_sub }}</span>
+      <a class="reporte-link" href="/mi/{{ token }}/reporte.pdf">{{ t.reporte_pdf }}</a>
     </div>
     {% if p.documentos %}
     <div class="docs">

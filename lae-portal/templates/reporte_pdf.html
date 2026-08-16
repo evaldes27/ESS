@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="utf-8">
+<style>
+@page {
+  size: letter;
+  margin: 2cm 1.8cm;
+}
+body{font-family:Helvetica,Arial,sans-serif;font-size:9.5pt;color:#101E19;line-height:1.45;}
+h1{font-size:18pt;margin:0 0 2px;color:#0C5A40;}
+h2{font-size:12.5pt;margin:22px 0 8px;color:#0C5A40;border-bottom:1px solid #C6D0C8;padding-bottom:5px;}
+.muted{color:#5B6B62;font-size:8.5pt;}
+.cabecera{width:100%;border-bottom:2px solid #0C5A40;padding-bottom:10px;margin-bottom:6px;}
+.cabecera td{vertical-align:middle;}
+.cabecera .logo img{height:26px;}
+.cabecera .info{text-align:right;font-size:8.5pt;color:#5B6B62;}
+
+table.filas{width:100%;border-collapse:collapse;margin-bottom:4px;}
+table.filas tr td{padding:5px 0;border-bottom:0.5px solid #EEF1EE;font-size:9pt;}
+table.filas tr td.v{text-align:right;font-weight:bold;}
+
+table.tabla{width:100%;border-collapse:collapse;margin-top:4px;}
+table.tabla th{text-align:left;font-size:8pt;text-transform:uppercase;color:#5B6B62;
+  border-bottom:1px solid #C6D0C8;padding:5px 4px;}
+table.tabla td{font-size:8.5pt;padding:5px 4px;border-bottom:0.5px solid #EEF1EE;}
+
+.doc-item{padding:5px 0;border-bottom:0.5px solid #EEF1EE;font-size:9pt;}
+.doc-item .tipo{color:#5B6B62;font-size:7.5pt;text-transform:uppercase;}
+.doc-item a{color:#0C5A40;}
+
+.entrada{margin-bottom:14px;padding-bottom:10px;border-bottom:0.5px solid #EEF1EE;}
+.entrada .meta{font-size:8pt;color:#5B6B62;text-transform:uppercase;margin-bottom:2px;}
+.entrada .titulo{font-size:10pt;font-weight:bold;margin-bottom:3px;}
+.entrada .texto{font-size:9pt;margin-bottom:6px;}
+table.fotos{width:100%;border-collapse:collapse;}
+table.fotos td{padding:0 6px 6px 0;vertical-align:top;}
+table.fotos img{width:150px;height:105px;-pdf-keep-in-frame-mode:shrink;}
+
+.pie-final{margin-top:26px;padding-top:10px;border-top:1px solid #C6D0C8;font-size:8pt;color:#5B6B62;}
+</style>
+</head>
+<body>
+
+<table class="cabecera">
+  <tr>
+    <td class="logo"><img src="{{ logo }}"></td>
+    <td class="info">
+      {{ t.reporte_generado.format(fecha=fecha) }}
+    </td>
+  </tr>
+</table>
+
+<h1>{{ p.nombre }}</h1>
+<p class="muted">{{ t.reporte_titulo }}{% if p.cliente %} · {{ p.cliente }}{% endif %}{% if p.ubicacion %} · {{ p.ubicacion }}{% endif %}</p>
+
+{% if m %}
+<h2>{{ t.avance_titulo }}</h2>
+<p class="muted">{{ t.tareas_conteo.format(hechas=m.hechas, total=m.total) }}</p>
+<table class="filas">
+  {% for f in m.fases %}
+  <tr><td>{{ f.nombre|limpio_pdf }}</td><td class="v">{{ f.hechas }}/{{ f.total }}</td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+{% if p.saldo %}
+<h2>{{ t.saldo_pendiente }}</h2>
+<table class="filas">
+  <tr><td>{{ t.total_proyecto }}</td><td class="v">${{ "{:,.0f}".format(p.saldo.total) }}</td></tr>
+  <tr><td>{{ t.pagado }}</td><td class="v">${{ "{:,.0f}".format(p.saldo.pagado) }}</td></tr>
+  <tr><td>{{ t.saldo_pendiente }}</td><td class="v">${{ "{:,.0f}".format(p.saldo.total - p.saldo.pagado) }}</td></tr>
+</table>
+{% endif %}
+
+{% if p.documentos %}
+<h2>{{ t.documentos_titulo }}</h2>
+{% for doc in p.documentos %}
+<div class="doc-item">
+  <span class="tipo">{{ doc.tipo or t.documento_default }}</span><br>
+  {{ doc.nombre }} — <a href="{{ doc.url }}">{{ doc.url }}</a>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if p.seriales %}
+<h2>{{ t.seriales_titulo }}</h2>
+<table class="tabla">
+  <tr><th>{{ t.col_equipo }}</th><th>{{ t.col_modelo }}</th><th>{{ t.col_serie }}</th><th>{{ t.col_garantia }}</th></tr>
+  {% for s in p.seriales %}
+  <tr>
+    <td>{{ s.equipo }}</td>
+    <td>{{ s.modelo or "—" }}</td>
+    <td>{{ s.serie or "—" }}</td>
+    <td>{{ s.garantia_hasta or "—" }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+{% if p.sistema %}
+<h2>{{ t.tu_sistema }}</h2>
+<table class="filas">
+  {% for k, val in p.sistema.solar.items() %}
+  <tr><td>{{ k }}</td><td class="v">{{ val }}</td></tr>
+  {% endfor %}
+  {% for k, val in p.sistema.potencia.items() %}
+  <tr><td>{{ k }}</td><td class="v">{{ val }}</td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+{% if bitacora %}
+<h2>{{ t.bitacora_titulo }}</h2>
+{% for b in bitacora %}
+<div class="entrada">
+  <div class="meta">{{ b.fecha }} · {{ b.fase|limpio_pdf }}</div>
+  <div class="titulo">{{ b.tarea|limpio_pdf }}</div>
+  {% if b.texto %}<div class="texto">{{ b.texto|limpio_pdf }}</div>{% endif %}
+  {% if b.fotos %}
+  <table class="fotos">
+    <tr>
+      {% for foto in b.fotos %}
+      {% if loop.index0 > 0 and loop.index0 % 3 == 0 %}</tr><tr>{% endif %}
+      <td><img src="{{ foto.src }}" alt="{{ foto.nombre }}"></td>
+      {% endfor %}
+    </tr>
+  </table>
+  {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="pie-final">
+  {{ t.pie_empresa }}<br>
+  {{ t.reporte_pie }}
+</div>
+
+</body>
+</html>
