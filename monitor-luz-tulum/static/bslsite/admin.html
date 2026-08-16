@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BSL BATT STORE — Panel interno</title>
+<style>
+  :root{ --navy:#161616; --blue:#e60012; --blue-d:#b3000e; --bg:#f6f5f5; --card:#fff; --text:#222; --muted:#767676; --line:#e7e5e5; --ok:#2e8b3d; }
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
+  body{background:var(--bg);color:var(--text)}
+  header{background:var(--navy);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+  header h1{font-size:18px}
+  header button{background:#3a3a3a;color:#fff;border:none;padding:8px 14px;border-radius:6px;font-size:13px;cursor:pointer}
+  main{max-width:1100px;margin:0 auto;padding:24px}
+  .gate{max-width:380px;margin:80px auto;background:#fff;border-radius:12px;padding:28px;box-shadow:0 4px 20px rgba(0,0,0,.08)}
+  .gate h2{color:var(--navy);margin-bottom:14px;font-size:18px}
+  .gate input{width:100%;padding:10px;border:1px solid var(--line);border-radius:7px;margin-bottom:12px;font-size:14px}
+  .gate button{width:100%;background:var(--blue);color:#fff;border:none;padding:11px;border-radius:7px;font-weight:700;cursor:pointer}
+  .gate .err{color:var(--blue-d);font-size:12px;margin-bottom:10px;display:none}
+  .tabs{display:flex;gap:4px;margin-bottom:18px;border-bottom:1px solid var(--line)}
+  .tabs button{background:none;border:none;padding:10px 16px;font-size:14px;font-weight:700;color:var(--muted);border-bottom:3px solid transparent;cursor:pointer}
+  .tabs button.active{color:var(--navy);border-bottom-color:var(--blue)}
+  .panel{display:none}
+  .panel.active{display:block}
+  .stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 18px;flex:1;min-width:140px}
+  .stat b{display:block;font-size:24px;color:var(--navy)}
+  .stat span{font-size:12px;color:var(--muted)}
+  .stat.hi{border-color:var(--blue);background:#fdeceb}
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+  th{background:var(--navy);color:#fff;text-align:left;padding:10px 12px;font-size:12px}
+  td{padding:10px 12px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:800}
+  .b0{background:#fdf1dc;color:#b07a1e}.b1{background:#e8effc;color:#2a5bb8}.b2{background:#f3e8fc;color:#7a2ab8}.b3{background:#e2f4e4;color:#2e8b3d}
+  .babierto{background:#fdf1dc;color:#b07a1e}.ben_proceso{background:#e8effc;color:#2a5bb8}.bresuelto{background:#e2f4e4;color:#2e8b3d}
+  select,input.mini{padding:5px 7px;border:1px solid var(--line);border-radius:5px;font-size:12px}
+  button.mini{background:var(--blue);color:#fff;border:none;padding:6px 10px;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer}
+  .empty{color:var(--muted);text-align:center;padding:30px;font-size:14px}
+  .msg-cell{max-width:260px}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <h2>🔐 BSL BATT STORE — Panel interno</h2>
+  <div class="err" id="gateErr">Llave incorrecta.</div>
+  <input type="password" id="adminKeyInput" placeholder="Admin key">
+  <button onclick="unlock()">Entrar</button>
+</div>
+
+<div id="app" style="display:none">
+  <header>
+    <h1>🔐 BSL BATT STORE — Panel interno</h1>
+    <button onclick="lock()">Salir</button>
+  </header>
+  <main>
+    <div class="stats" id="statsBox"></div>
+    <div class="tabs">
+      <button class="active" data-p="pOrders" onclick="showPanel('pOrders')">Pedidos</button>
+      <button data-p="pSupport" onclick="showPanel('pSupport')">Servicio técnico</button>
+      <button data-p="pWarranty" onclick="showPanel('pWarranty')">Garantías</button>
+    </div>
+    <div class="panel active" id="pOrders"><div class="empty">Cargando…</div></div>
+    <div class="panel" id="pSupport"><div class="empty">Cargando…</div></div>
+    <div class="panel" id="pWarranty"><div class="empty">Cargando…</div></div>
+  </main>
+</div>
+
+<script>
+const API_BASE = "https://api.bslbattstore.com";
+let ADMIN_KEY = localStorage.getItem("bsl_admin_key") || "";
+
+const CAT_LABEL = {instalacion:"Instalación",garantia_falla:"Garantía / Falla",bms_app_wifi:"App/BMS/WiFi-BT",envio_logistica:"Envío/Logística",cotizacion:"Cotización",otro:"Otro"};
+const ORDER_STATUS = ["Recibido","Confirmado","Enviado","Entregado"];
+const TICKET_STATUS = ["abierto","en_proceso","resuelto"];
+const money = (n,cur) => Number(n||0).toLocaleString("es-MX",{style:"currency",currency:cur||"MXN"});
+
+async function api(path, opts={}) {
+  const res = await fetch(API_BASE+path, { ...opts, headers: { "Content-Type":"application/json", "X-Admin-Key": ADMIN_KEY, ...(opts.headers||{}) } });
+  if (!res.ok) throw new Error("http_"+res.status);
+  return res.json();
+}
+
+async function unlock(){
+  ADMIN_KEY = document.getElementById("adminKeyInput").value.trim();
+  try {
+    await api("/api/admin/orders");
+    localStorage.setItem("bsl_admin_key", ADMIN_KEY);
+    document.getElementById("gate").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    loadAll();
+  } catch {
+    document.getElementById("gateErr").style.display = "block";
+  }
+}
+function lock(){
+  localStorage.removeItem("bsl_admin_key"); ADMIN_KEY = "";
+  document.getElementById("app").style.display = "none";
+  document.getElementById("gate").style.display = "block";
+}
+function showPanel(id){
+  document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("active", b.dataset.p===id));
+  document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active", p.id===id));
+}
+
+async function loadAll(){
+  await Promise.all([loadOrders(), loadSupport(), loadWarranty()]);
+}
+
+async function loadOrders(){
+  try {
+    const { orders } = await api("/api/admin/orders");
+    if (!orders.length) { document.getElementById("pOrders").innerHTML = '<div class="empty">Sin pedidos todavía.</div>'; return; }
+    document.getElementById("pOrders").innerHTML = `<table><thead><tr>
+      <th>Pedido</th><th>Cliente</th><th>Productos</th><th>Total</th><th>Estado</th><th>Guía</th><th></th>
+    </tr></thead><tbody>${orders.map(orderRow).join("")}</tbody></table>`;
+  } catch (e) { document.getElementById("pOrders").innerHTML = '<div class="empty">Error cargando pedidos. ¿La API está corriendo?</div>'; }
+}
+function orderRow(o){
+  const items = o.items.map(i=>`${i.qty}× ${i.sku}`).join(", ");
+  const tot = [o.usdTot>0?money(o.usdTot,"USD"):null, o.mxnTot>0?money(o.mxnTot,"MXN"):null].filter(Boolean).join(" + ");
+  return `<tr>
+    <td><b>${o.num}</b><br><span style="color:#767676;font-size:11px">${new Date(o.createdAt).toLocaleDateString("es-MX")}</span></td>
+    <td>${o.client.name}<br><span style="color:#767676;font-size:11px">${o.userEmail||o.client.email}</span></td>
+    <td>${items}</td>
+    <td>${tot}</td>
+    <td><span class="badge b${o.status}">${ORDER_STATUS[o.status]}</span></td>
+    <td>${o.carrier?o.carrier+" · "+o.tracking:"—"}</td>
+    <td>
+      <select id="st-${o.num}">
+        ${ORDER_STATUS.map((s,i)=>`<option value="${i}" ${i===o.status?"selected":""}>${s}</option>`).join("")}
+      </select>
+      <input class="mini" id="cr-${o.num}" placeholder="Paquetería" value="${o.carrier||""}" style="width:80px">
+      <input class="mini" id="tk-${o.num}" placeholder="Guía" value="${o.tracking||""}" style="width:90px">
+      <button class="mini" onclick="updateOrder('${o.num}')">Guardar</button>
+    </td>
+  </tr>`;
+}
+async function updateOrder(num){
+  const status = parseInt(document.getElementById("st-"+num).value, 10);
+  const carrier = document.getElementById("cr-"+num).value;
+  const tracking = document.getElementById("tk-"+num).value;
+  await api("/api/admin/orders/"+num+"/status", { method:"POST", body: JSON.stringify({ status, carrier, tracking }) });
+  loadOrders();
+}
+
+async function loadSupport(){
+  try {
+    const { tickets, categoryCounts } = await api("/api/admin/support");
+    const total = Object.values(categoryCounts).reduce((a,b)=>a+b,0) || 1;
+    const sorted = Object.entries(categoryCounts).sort((a,b)=>b[1]-a[1]);
+    document.getElementById("statsBox").innerHTML = sorted.length ? sorted.map(([cat,n],i)=>
+      `<div class="stat ${i===0?'hi':''}"><b>${n}</b><span>${CAT_LABEL[cat]||cat} (${Math.round(n/total*100)}%)</span></div>`
+    ).join("") : "";
+    if (!tickets.length) { document.getElementById("pSupport").innerHTML = '<div class="empty">Sin reportes todavía.</div>'; return; }
+    document.getElementById("pSupport").innerHTML = `<table><thead><tr>
+      <th>Ticket</th><th>Cliente</th><th>Categoría</th><th>Urgencia</th><th class="msg-cell">Mensaje</th><th>Estado</th><th></th>
+    </tr></thead><tbody>${tickets.map(ticketRow).join("")}</tbody></table>`;
+  } catch (e) { document.getElementById("pSupport").innerHTML = '<div class="empty">Error cargando reportes.</div>'; }
+}
+function ticketRow(tk){
+  return `<tr>
+    <td><b>${tk.num}</b><br><span style="color:#767676;font-size:11px">${new Date(tk.createdAt).toLocaleDateString("es-MX")}</span>${tk.orderNum?`<br><span style="color:#767676;font-size:11px">${tk.orderNum}</span>`:""}</td>
+    <td>${tk.userEmail||"—"}</td>
+    <td>${CAT_LABEL[tk.category]||tk.category}</td>
+    <td>${tk.severity}</td>
+    <td class="msg-cell">${tk.message}</td>
+    <td><span class="badge b${tk.status}">${tk.status}</span></td>
+    <td>
+      <select id="tks-${tk.num}">
+        ${TICKET_STATUS.map(s=>`<option value="${s}" ${s===tk.status?"selected":""}>${s}</option>`).join("")}
+      </select>
+      <button class="mini" onclick="updateTicket('${tk.num}')">Guardar</button>
+    </td>
+  </tr>`;
+}
+async function updateTicket(num){
+  const status = document.getElementById("tks-"+num).value;
+  await api("/api/admin/support/"+num+"/status", { method:"POST", body: JSON.stringify({ status }) });
+  loadSupport();
+}
+
+async function loadWarranty(){
+  try {
+    const { warranties } = await api("/api/admin/warranty");
+    if (!warranties.length) { document.getElementById("pWarranty").innerHTML = '<div class="empty">Sin garantías registradas.</div>'; return; }
+    document.getElementById("pWarranty").innerHTML = `<table><thead><tr>
+      <th>Serie</th><th>Modelo</th><th>Cliente</th><th>Instalador</th><th>Fecha instalación</th><th>Registrado</th>
+    </tr></thead><tbody>${warranties.map(w=>`<tr>
+      <td><b>${w.serial}</b></td><td>${w.sku}</td><td>${w.userEmail||"—"}</td><td>${w.installer||"—"}</td>
+      <td>${w.installDate?new Date(w.installDate).toLocaleDateString("es-MX"):"—"}</td>
+      <td>${new Date(w.createdAt).toLocaleDateString("es-MX")}</td>
+    </tr>`).join("")}</tbody></table>`;
+  } catch (e) { document.getElementById("pWarranty").innerHTML = '<div class="empty">Error cargando garantías.</div>'; }
+}
+
+if (ADMIN_KEY) { document.getElementById("gate").style.display="none"; document.getElementById("app").style.display="block"; loadAll(); }
+</script>
+</body>
+</html>

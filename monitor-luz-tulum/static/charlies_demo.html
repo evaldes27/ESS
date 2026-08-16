@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Charlie's Cuts & Shaves · Reserva tu corte</title>
+<style>
+  :root{
+    --bg:#0e0f11; --card:#17191d; --card2:#1e2127; --line:#2a2e36;
+    --gold:#d4a944; --gold-dim:#8a6f2e; --text:#e8e6e1; --muted:#9aa0a8;
+    --green:#3ecf8e; --red:#e05a5a; --mp:#009ee3;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,-apple-system,sans-serif; min-height:100vh;}
+  .wrap{max-width:520px; margin:0 auto; padding:0 16px 80px;}
+
+  header{padding:28px 0 18px; text-align:center; border-bottom:1px solid var(--line);}
+  .logo{width:64px;height:64px;border-radius:50%;background:var(--card2);border:2px solid var(--gold);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:28px;}
+  h1{font-size:22px; letter-spacing:1px;}
+  h1 span{color:var(--gold);}
+  .tag{color:var(--muted); font-size:13px; margin-top:4px;}
+
+  .modebar{display:flex; justify-content:center; gap:8px; margin:16px 0;}
+  .modebar button{background:var(--card); border:1px solid var(--line); color:var(--muted);
+    padding:8px 18px; border-radius:20px; font-size:13px; cursor:pointer;}
+  .modebar button.active{background:var(--gold); color:#111; border-color:var(--gold); font-weight:600;}
+
+  h2{font-size:15px; text-transform:uppercase; letter-spacing:1.5px; color:var(--gold); margin:24px 0 12px;}
+
+  .services{display:grid; gap:10px;}
+  .svc{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px;
+    display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:border-color .15s;}
+  .svc:hover{border-color:var(--gold-dim);}
+  .svc.sel{border-color:var(--gold); background:var(--card2);}
+  .svc .nm{font-weight:600;} .svc .dur{color:var(--muted); font-size:12px; margin-top:2px;}
+  .svc .pr{color:var(--gold); font-weight:700;}
+
+  .days{display:flex; gap:8px; overflow-x:auto; padding-bottom:6px;}
+  .day{min-width:64px; text-align:center; background:var(--card); border:1px solid var(--line);
+    border-radius:12px; padding:10px 6px; cursor:pointer; flex-shrink:0;}
+  .day.sel{border-color:var(--gold); background:var(--card2);}
+  .day.off{opacity:.35; cursor:not-allowed;}
+  .day .dw{font-size:11px; text-transform:uppercase; color:var(--muted);}
+  .day .dn{font-size:20px; font-weight:700; margin:2px 0;}
+  .day .cnt{font-size:10px; color:var(--green);}
+  .day.off .cnt{color:var(--muted);}
+
+  .slots{display:grid; grid-template-columns:repeat(auto-fill,minmax(88px,1fr)); gap:8px;}
+  .slot{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 0;
+    text-align:center; cursor:pointer; font-size:14px;}
+  .slot:hover{border-color:var(--gold-dim);}
+  .slot.sel{background:var(--gold); color:#111; font-weight:700; border-color:var(--gold);}
+  .slot.taken{opacity:.3; text-decoration:line-through; cursor:not-allowed;}
+  .empty{color:var(--muted); font-size:14px; padding:12px 0;}
+
+  .field{margin-bottom:12px;}
+  .field label{display:block; font-size:12px; color:var(--muted); margin-bottom:5px;}
+  .field input{width:100%; background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:12px 14px; color:var(--text); font-size:15px;}
+  .field input:focus{outline:none; border-color:var(--gold);}
+
+  .cta{width:100%; background:var(--gold); color:#111; border:none; border-radius:12px;
+    padding:15px; font-size:16px; font-weight:700; cursor:pointer; margin-top:8px;}
+  .cta:disabled{opacity:.35; cursor:not-allowed;}
+
+  .summary{background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:14px 16px;
+    font-size:14px; margin-top:16px; display:none;}
+  .summary.show{display:block;}
+  .summary .row{display:flex; justify-content:space-between; padding:3px 0;}
+  .summary .row.total{border-top:1px solid var(--line); margin-top:6px; padding-top:8px; font-weight:700;}
+  .summary .row.total .v{color:var(--gold);}
+
+  /* confirmation */
+  .confirm{text-align:center; padding:30px 0;}
+  .confirm .big{font-size:52px;}
+  .confirm h3{margin:12px 0 6px; font-size:20px;}
+  .confirm p{color:var(--muted); font-size:14px; line-height:1.5;}
+  .paybtn{display:inline-block; background:var(--mp); color:#fff; text-decoration:none;
+    padding:14px 28px; border-radius:12px; font-weight:700; margin-top:18px; font-size:15px;}
+  .linkbox{background:var(--card); border:1px dashed var(--line); border-radius:10px; padding:10px;
+    font-size:12px; color:var(--muted); margin-top:14px; word-break:break-all;}
+  .back{background:none; border:none; color:var(--gold); font-size:14px; cursor:pointer; margin-top:22px;}
+
+  /* admin */
+  .stats{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;}
+  .stat{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 10px; text-align:center;}
+  .stat .v{font-size:20px; font-weight:700; color:var(--gold);}
+  .stat.fee .v{color:var(--mp);}
+  .stat.net .v{color:var(--green);}
+  .stat .l{font-size:11px; color:var(--muted); margin-top:3px;}
+
+  .bk{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px;
+    margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;}
+  .bk .who{font-weight:600; font-size:14px;} .bk .when{color:var(--muted); font-size:12px; margin-top:2px;}
+  .bk .amt{color:var(--gold); font-weight:700; font-size:14px; text-align:right;}
+  .pill{font-size:10px; padding:2px 8px; border-radius:10px; display:inline-block; margin-top:3px;}
+  .pill.ok{background:rgba(62,207,142,.15); color:var(--green);}
+  .pill.pend{background:rgba(212,169,68,.15); color:var(--gold);}
+
+  .adm-slot{user-select:none;}
+  .adm-slot.blocked{background:rgba(224,90,90,.12); border-color:var(--red); color:var(--red); opacity:1; text-decoration:none;}
+  .hint{color:var(--muted); font-size:12px; margin:-6px 0 10px;}
+
+  .hidden{display:none;}
+  footer{text-align:center; color:var(--muted); font-size:11px; margin-top:40px;}
+  footer b{color:var(--gold);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">💈</div>
+    <h1>CHARLIE'S <span>CUTS &amp; SHAVES</span></h1>
+    <div class="tag">Barbería · Reserva y paga en línea</div>
+  </header>
+
+  <div class="modebar">
+    <button id="btnClient" class="active" onclick="setMode('client')">Reservar</button>
+    <button id="btnAdmin" onclick="setMode('admin')">Modo Charly 🔒</button>
+  </div>
+
+  <!-- ============ CLIENT ============ -->
+  <div id="viewClient">
+    <div id="bookingFlow">
+      <h2>1 · Elige tu servicio</h2>
+      <div class="services" id="svcList"></div>
+
+      <h2>2 · Elige el día</h2>
+      <div class="days" id="dayList"></div>
+
+      <h2>3 · Elige la hora</h2>
+      <div class="slots" id="slotList"></div>
+
+      <h2>4 · Tus datos</h2>
+      <div class="field"><label>Nombre</label><input id="fName" placeholder="Tu nombre"></div>
+      <div class="field"><label>WhatsApp</label><input id="fPhone" placeholder="55 1234 5678" inputmode="tel"></div>
+
+      <div class="summary" id="summary"></div>
+      <button class="cta" id="btnBook" disabled onclick="book()">Reservar y pagar</button>
+    </div>
+
+    <div id="confirmView" class="confirm hidden">
+      <div class="big">✂️</div>
+      <h3>¡Reserva apartada!</h3>
+      <p id="confirmTxt"></p>
+      <a class="paybtn" id="payLink" href="#" onclick="return payDemo(event)">Pagar con Mercado Pago</a>
+      <div class="linkbox" id="linkBox"></div>
+      <p style="margin-top:14px">Tu lugar se confirma al completar el pago.<br>Recibirás confirmación por WhatsApp.</p>
+      <button class="back" onclick="resetFlow()">← Hacer otra reserva</button>
+    </div>
+  </div>
+
+  <!-- ============ ADMIN ============ -->
+  <div id="viewAdmin" class="hidden">
+    <h2>Resumen del negocio</h2>
+    <div class="stats">
+      <div class="stat"><div class="v" id="stGross">–</div><div class="l">Cobrado</div></div>
+      <div class="stat fee"><div class="v" id="stFee">–</div><div class="l">Comisión 4%</div></div>
+      <div class="stat net"><div class="v" id="stNet">–</div><div class="l">Para Charly</div></div>
+    </div>
+
+    <h2>Citas</h2>
+    <div id="admBookings"></div>
+
+    <h2>Disponibilidad</h2>
+    <p class="hint">Toca un horario para abrirlo o bloquearlo. Rojo = bloqueado.</p>
+    <div class="days" id="admDayList"></div>
+    <div class="slots" id="admSlotList" style="margin-top:10px"></div>
+  </div>
+
+  <footer>Demo · Charlie's Cuts &amp; Shaves · Reservas y pagos en línea con comisión del <b>4%</b> por reserva pagada</footer>
+</div>
+
+<script>
+// ---------- data ----------
+const SERVICES = [
+  {id:'corte',  nm:'Corte de cabello', dur:'45 min', pr:250},
+  {id:'combo',  nm:'Corte + Barba',    dur:'75 min', pr:380},
+  {id:'barba',  nm:'Barba y perfilado',dur:'30 min', pr:160},
+  {id:'diseno', nm:'Diseño / Freestyle',dur:'60 min', pr:320},
+];
+const HOURS = ['10:00','11:00','12:00','13:00','16:00','17:00','18:00','19:00','19:45'];
+const FEE = 0.04;
+const DOW = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+// next 7 days; Sunday closed
+const days = [];
+for(let i=0;i<7;i++){
+  const d = new Date(); d.setDate(d.getDate()+i);
+  days.push({date:d, key:d.toISOString().slice(0,10), closed:d.getDay()===0});
+}
+
+// demo state (in-memory)
+const blocked = {};                       // key -> Set of hours Charly blocked
+const bookings = [                        // seeded demo bookings
+  {name:'Beto R.',  phone:'55 1111 2222', svc:'combo', day:days[0].key, hour:'11:00', paid:true},
+  {name:'El Pelón', phone:'55 3333 4444', svc:'corte', day:days[0].key, hour:'17:00', paid:true},
+  {name:'Marco A.', phone:'55 5555 6666', svc:'corte', day:days[1].key, hour:'12:00', paid:false},
+];
+
+let sel = {svc:null, day:days.find(d=>!d.closed).key, hour:null};
+let admDay = sel.day;
+
+// ---------- helpers ----------
+const $ = id => document.getElementById(id);
+const mxn = n => '$'+n.toLocaleString('es-MX')+' MXN';
+const svcOf = id => SERVICES.find(s=>s.id===id);
+const isTaken = (day,hour) => bookings.some(b=>b.day===day && b.hour===hour);
+const isBlocked = (day,hour) => blocked[day] && blocked[day].has(hour);
+const freeCount = day => day.closed ? 0 : HOURS.filter(h=>!isTaken(day.key,h)&&!isBlocked(day.key,h)).length;
+const fmtDay = key => { const d=days.find(x=>x.key===key).date; return DOW[d.getDay()]+' '+d.getDate(); };
+
+// ---------- client render ----------
+function renderServices(){
+  $('svcList').innerHTML = SERVICES.map(s=>
+    `<div class="svc ${sel.svc===s.id?'sel':''}" onclick="pick('svc','${s.id}')">
+       <div><div class="nm">${s.nm}</div><div class="dur">${s.dur}</div></div>
+       <div class="pr">${mxn(s.pr)}</div></div>`).join('');
+}
+function renderDays(){
+  $('dayList').innerHTML = days.map(d=>
+    `<div class="day ${d.closed?'off':''} ${sel.day===d.key?'sel':''}" ${d.closed?'':`onclick="pick('day','${d.key}')"`}>
+       <div class="dw">${DOW[d.date.getDay()]}</div><div class="dn">${d.date.getDate()}</div>
+       <div class="cnt">${d.closed?'Cerrado':freeCount(d)+' libres'}</div></div>`).join('');
+}
+function renderSlots(){
+  const list = HOURS.filter(h=>!isBlocked(sel.day,h));
+  $('slotList').innerHTML = list.length ? list.map(h=>{
+    const taken = isTaken(sel.day,h);
+    return `<div class="slot ${taken?'taken':''} ${sel.hour===h?'sel':''}" ${taken?'':`onclick="pick('hour','${h}')"`}>${h}</div>`;
+  }).join('') : '<div class="empty">Sin horarios este día 😢</div>';
+}
+function renderSummary(){
+  const ok = sel.svc && sel.hour;
+  $('btnBook').disabled = !ok;
+  const box = $('summary');
+  if(!ok){ box.classList.remove('show'); return; }
+  const s = svcOf(sel.svc);
+  box.classList.add('show');
+  box.innerHTML =
+    `<div class="row"><span>${s.nm}</span><span>${fmtDay(sel.day)} · ${sel.hour}</span></div>
+     <div class="row total"><span>Total a pagar</span><span class="v">${mxn(s.pr)}</span></div>`;
+}
+function pick(k,v){
+  sel[k]=v; if(k==='day') sel.hour=null;
+  renderServices(); renderDays(); renderSlots(); renderSummary();
+}
+
+// ---------- booking ----------
+function book(){
+  const name = $('fName').value.trim(), phone = $('fPhone').value.trim();
+  if(!name || !phone){ alert('Pon tu nombre y WhatsApp para apartar 🙏'); return; }
+  bookings.push({name, phone, svc:sel.svc, day:sel.day, hour:sel.hour, paid:false});
+  const s = svcOf(sel.svc);
+  const ref = 'CT-'+Math.random().toString(36).slice(2,8).toUpperCase();
+  $('confirmTxt').textContent = `${s.nm} · ${fmtDay(sel.day)} a las ${sel.hour} · ${mxn(s.pr)}`;
+  $('linkBox').textContent = `Link de pago (demo): https://mpago.la/charliescuts/${ref}`;
+  $('bookingFlow').classList.add('hidden');
+  $('confirmView').classList.remove('hidden');
+  window.scrollTo(0,0);
+}
+function payDemo(e){
+  e.preventDefault();
+  bookings[bookings.length-1].paid = true;
+  alert('✅ (Demo) Pago recibido vía Mercado Pago.\nEn la versión real este botón abre el checkout de Mercado Pago y la comisión del 4% se descuenta automáticamente.');
+  renderAdmin();
+  return false;
+}
+function resetFlow(){
+  sel = {svc:null, day:days.find(d=>!d.closed).key, hour:null};
+  $('fName').value=''; $('fPhone').value='';
+  $('bookingFlow').classList.remove('hidden');
+  $('confirmView').classList.add('hidden');
+  renderAll();
+}
+
+// ---------- admin ----------
+function renderAdmin(){
+  const paid = bookings.filter(b=>b.paid);
+  const gross = paid.reduce((t,b)=>t+svcOf(b.svc).pr,0);
+  $('stGross').textContent = mxn(gross);
+  $('stFee').textContent = mxn(Math.round(gross*FEE));
+  $('stNet').textContent = mxn(gross-Math.round(gross*FEE));
+
+  $('admBookings').innerHTML = bookings.length ? [...bookings]
+    .sort((a,b)=>(a.day+a.hour).localeCompare(b.day+b.hour)).map(b=>{
+      const s=svcOf(b.svc);
+      return `<div class="bk">
+        <div><div class="who">${b.name}</div><div class="when">${fmtDay(b.day)} · ${b.hour} · ${s.nm}</div></div>
+        <div class="amt">${mxn(s.pr)}<br><span class="pill ${b.paid?'ok':'pend'}">${b.paid?'Pagado':'Pendiente'}</span></div>
+      </div>`;}).join('') : '<div class="empty">Sin citas aún</div>';
+
+  $('admDayList').innerHTML = days.map(d=>
+    `<div class="day ${d.closed?'off':''} ${admDay===d.key?'sel':''}" ${d.closed?'':`onclick="admPick('${d.key}')"`}>
+       <div class="dw">${DOW[d.date.getDay()]}</div><div class="dn">${d.date.getDate()}</div>
+       <div class="cnt">${d.closed?'Cerrado':freeCount(d)+' libres'}</div></div>`).join('');
+
+  $('admSlotList').innerHTML = HOURS.map(h=>{
+    const taken = isTaken(admDay,h), blk = isBlocked(admDay,h);
+    if(taken) return `<div class="slot taken">${h}</div>`;
+    return `<div class="slot adm-slot ${blk?'blocked':''}" onclick="toggleBlock('${h}')">${h}${blk?' ✕':''}</div>`;
+  }).join('');
+}
+function admPick(key){ admDay = key; renderAdmin(); }
+function toggleBlock(h){
+  if(!blocked[admDay]) blocked[admDay] = new Set();
+  blocked[admDay].has(h) ? blocked[admDay].delete(h) : blocked[admDay].add(h);
+  renderAdmin(); renderDays(); renderSlots();
+}
+
+// ---------- mode ----------
+function setMode(m){
+  $('btnClient').classList.toggle('active', m==='client');
+  $('btnAdmin').classList.toggle('active', m==='admin');
+  $('viewClient').classList.toggle('hidden', m!=='client');
+  $('viewAdmin').classList.toggle('hidden', m!=='admin');
+  if(m==='admin') renderAdmin();
+}
+
+function renderAll(){ renderServices(); renderDays(); renderSlots(); renderSummary(); }
+renderAll();
+</script>
+</body>
+</html>

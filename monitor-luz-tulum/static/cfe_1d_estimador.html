@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>CFE Bill Estimate · Tariff 1D · Los Amigos Energy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F0D0A; --surface:#1A1611; --surface-2:#221D16; --line:#33291C;
+    --text:#F2E9DA; --muted:#8A7E6B; --amber:#F5A623; --amber-dim:#7a5418;
+    --green:#3FB950; --red:#E5484D; --radius:18px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;
+    line-height:1.45;padding:0 16px calc(40px + env(safe-area-inset-bottom));
+    max-width:480px;margin:0 auto;-webkit-font-smoothing:antialiased;
+  }
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+  header{
+    display:flex;align-items:center;justify-content:space-between;padding:22px 2px 18px;
+    position:sticky;top:0;background:linear-gradient(var(--bg) 72%,transparent);z-index:5;
+  }
+  .brand{display:flex;flex-direction:column;gap:3px}
+  .brand .mark{font-family:'Space Grotesk';font-weight:700;font-size:13px;letter-spacing:.16em;color:var(--amber);text-transform:uppercase}
+  .brand .sub{font-size:11px;color:var(--muted);letter-spacing:.04em}
+  .season-chip{font-size:11px;color:var(--muted);border:1px solid var(--line);padding:6px 11px;border-radius:999px;white-space:nowrap}
+  .season-chip b{color:var(--text);font-weight:600}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:14px}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  .hero{
+    background:radial-gradient(120% 100% at 100% 0%, rgba(245,166,35,.10), transparent 60%),var(--surface);
+    border-color:#3d3015;text-align:left;padding:24px 22px 22px;
+  }
+  .hero .total{font-family:'Space Grotesk';font-weight:700;font-size:clamp(42px,14vw,60px);line-height:1;letter-spacing:-.02em;color:var(--amber)}
+  .hero .total .cents{font-size:.5em;color:#c98c2e;font-weight:600}
+  .hero .meta{margin-top:12px;font-size:13px;color:var(--muted)}
+  .hero .meta b{color:var(--text);font-weight:600}
+  .hero-client{font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px;letter-spacing:.01em}
+  .hero-client:empty{display:none}
+  .hero-client .house{color:var(--muted);font-weight:400}
+  label.field-label{display:block;font-size:13px;color:var(--muted);margin-bottom:8px}
+  .kwh-row{display:flex;align-items:baseline;gap:8px;margin-bottom:14px}
+  .kwh-input{flex:0 0 auto;width:140px;background:var(--surface-2);border:1px solid var(--line);color:var(--text);font-family:'Space Grotesk';font-weight:600;font-size:30px;border-radius:12px;padding:8px 12px;text-align:right}
+  .kwh-input:focus{outline:none;border-color:var(--amber)}
+  .kwh-unit{font-size:15px;color:var(--muted);font-weight:500}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:999px;background:linear-gradient(90deg,var(--amber-dim),var(--amber));outline:none;margin-top:4px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--amber);border:3px solid var(--bg);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+  input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--amber);border:3px solid var(--bg);cursor:pointer}
+  .toggle{margin-top:18px;border-top:1px solid var(--line);padding-top:14px;font-size:13px;color:var(--amber);cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px}
+  .toggle .chev{transition:transform .2s ease}
+  .toggle[aria-expanded=true] .chev{transform:rotate(90deg)}
+  .projector{display:none;margin-top:14px;gap:10px}
+  .projector.open{display:flex}
+  .proj-cell{flex:1}
+  .proj-cell input{width:100%;background:var(--surface-2);border:1px solid var(--line);color:var(--text);font-family:'Space Grotesk';font-weight:600;font-size:18px;border-radius:10px;padding:8px;text-align:center}
+  .proj-cell input:focus{outline:none;border-color:var(--amber)}
+  .proj-cell span{display:block;font-size:11px;color:var(--muted);margin-top:5px;text-align:center}
+  .row{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line)}
+  .row:last-of-type{border-bottom:none}
+  .row .tier-name{font-size:14px}
+  .row .tier-name small{display:block;color:var(--muted);font-size:11.5px;margin-top:1px}
+  .row .tier-amt{font-size:15px;font-weight:600}
+  .row.subtotal{border-top:1px solid var(--line);margin-top:4px;padding-top:14px}
+  .row.grand{padding-top:14px}
+  .row.grand .tier-name{font-weight:600;font-size:15px}
+  .row.grand .tier-amt{font-size:20px;font-weight:700;color:var(--amber);font-family:'Space Grotesk'}
+  .row.minimum .tier-name{color:var(--amber)}
+  .swatch{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:8px;vertical-align:middle}
+  .gauge-top{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px}
+  .gauge-head{font-family:'Space Grotesk';font-weight:600;font-size:22px}
+  .gauge-head small{font-size:13px;color:var(--muted);font-weight:400;font-family:'Inter'}
+  .gauge-state{font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px}
+  .bar{position:relative;height:14px;background:var(--surface-2);border-radius:999px;overflow:hidden;border:1px solid var(--line)}
+  .bar-fill{height:100%;border-radius:999px;transition:width .45s cubic-bezier(.4,0,.2,1),background .3s ease}
+  .bar-ticks{display:flex;justify-content:space-between;margin-top:7px;font-size:11px;color:var(--muted)}
+  .gauge-note{font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.4}
+  .settings summary{list-style:none;cursor:pointer;font-size:13.5px;color:var(--amber);display:flex;align-items:center;gap:6px;padding:2px}
+  .settings summary::-webkit-details-marker{display:none}
+  .settings[open] summary .chev{transform:rotate(90deg)}
+  .settings .chev{transition:transform .2s ease}
+  .set-note{font-size:11.5px;color:var(--muted);margin:12px 0 16px;line-height:1.45}
+  .seg{display:flex;gap:6px;margin-bottom:16px}
+  .seg button{flex:1;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);font-family:'Inter';font-size:13px;padding:8px;border-radius:9px;cursor:pointer;font-weight:500}
+  .seg button.active{background:var(--amber);color:#1a1208;border-color:var(--amber);font-weight:600}
+  .tier-edit{margin-bottom:18px}
+  .tier-edit h4{font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;font-weight:600}
+  .edit-grid{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px;align-items:center;margin-bottom:8px}
+  .edit-grid .lbl{font-size:13px}
+  .edit-grid input{background:var(--surface-2);border:1px solid var(--line);color:var(--text);font-family:'Space Grotesk';font-size:14px;border-radius:8px;padding:7px 8px;text-align:right;width:100%}
+  .edit-grid input:focus{outline:none;border-color:var(--amber)}
+  .edit-grid input:disabled{opacity:.55}
+  .edit-grid .colhead{font-size:10.5px;color:var(--muted);text-align:right;text-transform:uppercase;letter-spacing:.05em}
+  .edit-grid .lbl.colhead{text-align:left}
+  .fixed-row{display:flex;gap:8px;margin-top:6px}
+  .fixed-row .fx{flex:1}
+  .fixed-row label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+  .fixed-row input{width:100%;background:var(--surface-2);border:1px solid var(--line);color:var(--text);font-family:'Space Grotesk';font-size:15px;border-radius:9px;padding:8px;text-align:right}
+  .fixed-row input:focus{outline:none;border-color:var(--amber)}
+  .auto-banner{font-size:11.5px;color:var(--muted);text-align:center;padding:9px 12px;margin-bottom:14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;line-height:1.35}
+  .auto-banner b{color:var(--text);font-weight:600}
+  .auto-banner.warn{color:var(--amber);border-color:var(--amber-dim)}
+  #consumoCard, .settings-card{display:none}
+  body.manual #consumoCard, body.manual .settings-card{display:block}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="mark">Los Amigos Energy</span>
+    <span class="sub">Bill estimate · Tariff 1D</span>
+  </div>
+  <div class="season-chip">Season: <b id="seasonChip">—</b></div>
+</header>
+
+<div id="autoBanner" class="auto-banner">Manual mode · adjust usage below</div>
+
+<section class="card hero">
+  <div class="hero-client" id="heroClient"></div>
+  <div class="eyebrow">Your next bill · estimated</div>
+  <div class="total num" id="heroTotal">$0</div>
+  <div class="meta">≈ <b class="num" id="heroKwh">0</b> kWh this period · <span id="heroSeason">—</span> rates</div>
+</section>
+
+<section class="card" id="consumoCard">
+  <label class="field-label" for="kwhNum">Projected consumption this period (grid kWh)</label>
+  <div class="kwh-row">
+    <input class="kwh-input num" id="kwhNum" type="number" min="0" max="6000" value="600" inputmode="numeric" />
+    <span class="kwh-unit">kWh</span>
+  </div>
+  <input type="range" id="kwhRange" min="0" max="4000" step="10" value="600" />
+
+  <div class="toggle" id="projToggle" role="button" tabindex="0" aria-expanded="false">
+    <span class="chev">›</span> Don't know the total? Project it from usage so far
+  </div>
+  <div class="projector" id="projector">
+    <div class="proj-cell"><input id="pKwh" type="number" min="0" value="240" inputmode="numeric"/><span>kWh so far</span></div>
+    <div class="proj-cell"><input id="pDay" type="number" min="1" value="24" inputmode="numeric"/><span>day of period</span></div>
+    <div class="proj-cell"><input id="pLen" type="number" min="1" value="61" inputmode="numeric"/><span>days in period</span></div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="eyebrow">Bill breakdown</div>
+  <div id="breakdown"></div>
+</section>
+
+<section class="card">
+  <div class="gauge-top">
+    <div class="gauge-head"><span class="num" id="headroom">0</span> kWh <small>remaining</small></div>
+    <div class="gauge-state" id="gaugeState">—</div>
+  </div>
+  <div class="bar"><div class="bar-fill" id="barFill" style="width:0%"></div></div>
+  <div class="bar-ticks"><span>0</span><span>600</span><span>limit 1,200</span></div>
+  <p class="gauge-note" id="gaugeNote"></p>
+</section>
+
+<section class="card settings-card">
+  <details class="settings">
+    <summary><span class="chev">›</span> Adjust prices · calibrate with a real bill</summary>
+    <p class="set-note">Loaded with the real rates from the summer 2025 bill (Cancún, 1D). Winter is an estimate — a cold-season bill is needed to lock it in. Rates rise ~0.3% per month, so a 2026 bill lets us update them.</p>
+
+    <div class="seg" id="seasonSeg">
+      <button data-season="auto" class="active">Auto (today)</button>
+      <button data-season="verano">Summer</button>
+      <button data-season="invierno">Winter</button>
+    </div>
+
+    <div class="tier-edit" id="editVerano">
+      <h4>Summer blocks · per period</h4>
+      <div class="edit-grid"><span class="lbl colhead">Block</span><span class="colhead">up to kWh</span><span class="colhead">$/kWh</span></div>
+      <div class="edit-grid"><span class="lbl">Basic</span><input class="num" id="v_b_lim" value="350"/><input class="num" id="v_b_pre" value="0.961"/></div>
+      <div class="edit-grid"><span class="lbl">Intermediate 1</span><input class="num" id="v_i1_lim" value="800"/><input class="num" id="v_i1_pre" value="1.115"/></div>
+      <div class="edit-grid"><span class="lbl">Intermediate 2</span><input class="num" id="v_i2_lim" value="1200"/><input class="num" id="v_i2_pre" value="1.435"/></div>
+      <div class="edit-grid"><span class="lbl">Excess</span><input class="num" id="v_e_lim" value="∞" disabled/><input class="num" id="v_e_pre" value="3.833"/></div>
+    </div>
+
+    <div class="tier-edit" id="editInvierno">
+      <h4>Winter blocks · per period <span style="color:var(--amber-dim)">(estimated)</span></h4>
+      <div class="edit-grid"><span class="lbl colhead">Block</span><span class="colhead">up to kWh</span><span class="colhead">$/kWh</span></div>
+      <div class="edit-grid"><span class="lbl">Basic</span><input class="num" id="w_b_lim" value="350"/><input class="num" id="w_b_pre" value="0.961"/></div>
+      <div class="edit-grid"><span class="lbl">Intermediate 1</span><input class="num" id="w_i1_lim" value="800"/><input class="num" id="w_i1_pre" value="1.115"/></div>
+      <div class="edit-grid"><span class="lbl">Intermediate 2</span><input class="num" id="w_i2_lim" value="1200"/><input class="num" id="w_i2_pre" value="1.435"/></div>
+      <div class="edit-grid"><span class="lbl">Excess</span><input class="num" id="w_e_lim" value="∞" disabled/><input class="num" id="w_e_pre" value="3.833"/></div>
+    </div>
+
+    <div class="fixed-row">
+      <div class="fx"><label for="cargoFijo">Fixed charge MX$</label><input class="num" id="cargoFijo" value="0.00"/></div>
+      <div class="fx"><label for="ivaPct">VAT %</label><input class="num" id="ivaPct" value="16"/></div>
+      <div class="fx"><label for="dapPct">DAP %</label><input class="num" id="dapPct" value="5"/></div>
+    </div>
+    <div class="fixed-row">
+      <div class="fx"><label for="minCharge">Minimum bill MX$</label><input class="num" id="minCharge" value="65"/></div>
+      <div class="fx"></div><div class="fx"></div>
+    </div>
+  </details>
+</section>
+
+<footer>
+  Estimate based on your Victron system's grid meter. Your actual CFE bill may vary.<br>
+  Tariff 1D · billed every 2 months · includes 16% VAT, 5% DAP and a MX$65 minimum charge · subsidised up to 1,200 kWh.
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var SUMMER_MONTHS  = [5,6,7,8,9,10];   // CFE summer season for this region (confirm with an off-season bill)
+  var SUBSIDY_LIMIT  = 1200;             // kWh/period — top of Intermediate 2; above this is Excess
+  var DEFAULT_MIN    = 65;               // MX$ minimum bill
+
+  var mxn = new Intl.NumberFormat('en-US',{style:'currency',currency:'MXN'});   // renders as "MX$"
+  var $ = function(id){return document.getElementById(id);};
+  var num = function(id){var el=$(id);var v=el?parseFloat(el.value):NaN;return isNaN(v)?0:v;};
+
+  function isSummerNow(){ return SUMMER_MONTHS.indexOf(new Date().getMonth()+1) !== -1; }
+  function activeSeason(){
+    var sel = document.querySelector('#seasonSeg button.active').dataset.season;
+    if(sel === 'auto') return isSummerNow() ? 'verano' : 'invierno';
+    return sel;
+  }
+  function tiers(season){
+    var p = season === 'verano' ? 'v' : 'w';
+    return [
+      {name:'Basic',          color:'var(--green)', limit:num(p+'_b_lim'),  price:num(p+'_b_pre')},
+      {name:'Intermediate 1', color:'var(--amber)', limit:num(p+'_i1_lim'), price:num(p+'_i1_pre')},
+      {name:'Intermediate 2', color:'var(--amber)', limit:num(p+'_i2_lim'), price:num(p+'_i2_pre')},
+      {name:'Excess',         color:'var(--red)',   limit:Infinity,         price:num(p+'_e_pre')}
+    ];
+  }
+  function computeEnergy(kwh, season){
+    var rows=[], prev=0, energy=0;
+    tiers(season).forEach(function(t){
+      var inTier = Math.max(0, Math.min(kwh, t.limit) - prev);
+      var cost = inTier * t.price;
+      energy += cost;
+      rows.push({name:t.name,color:t.color,price:t.price,kwh:inTier,cost:cost});
+      prev = t.limit;
+    });
+    return {rows:rows, energy:energy};
+  }
+  function fmtKwh(n){ return Math.round(n).toLocaleString('en-US'); }
+  function splitCurrency(v){
+    var s = mxn.format(v), m = s.match(/^(.*)(\.\d{2})$/);
+    return m ? [m[1], m[2]] : [s,''];
+  }
+
+  function recompute(){
+    var kwh = num('kwhNum');
+    var season = activeSeason();
+    $('seasonChip').textContent = season === 'verano' ? 'Summer' : 'Winter';
+    $('heroSeason').textContent = season === 'verano' ? 'summer' : 'winter';
+
+    var e = computeEnergy(kwh, season);
+    var fixed = num('cargoFijo');
+    var vatRate = num('ivaPct')/100;
+    var dapRate = num('dapPct')/100;
+    var minCharge = $('minCharge') ? num('minCharge') : DEFAULT_MIN;
+
+    var vat = (e.energy + fixed) * vatRate;
+    var dap = e.energy * dapRate;
+    var computed = e.energy + fixed + vat + dap;
+    var topup = Math.max(0, minCharge - computed);
+    var total = computed + topup;
+
+    var parts = splitCurrency(total);
+    $('heroTotal').innerHTML = parts[0] + '<span class="cents">' + parts[1] + '</span>';
+    $('heroKwh').textContent = fmtKwh(kwh);
+
+    var html = '';
+    e.rows.forEach(function(r){
+      html += '<div class="row"><div class="tier-name"><span class="swatch" style="background:'+r.color+'"></span>'
+        + r.name + '<small>' + fmtKwh(r.kwh) + ' kWh × ' + mxn.format(r.price) + '</small></div>'
+        + '<div class="tier-amt num">' + mxn.format(r.cost) + '</div></div>';
+    });
+    if(fixed > 0){
+      html += '<div class="row"><div class="tier-name">Fixed charge</div><div class="tier-amt num">' + mxn.format(fixed) + '</div></div>';
+    }
+    html += '<div class="row subtotal"><div class="tier-name">Energy</div><div class="tier-amt num">' + mxn.format(e.energy + fixed) + '</div></div>';
+    html += '<div class="row"><div class="tier-name">VAT ' + num('ivaPct') + '%</div><div class="tier-amt num">' + mxn.format(vat) + '</div></div>';
+    html += '<div class="row"><div class="tier-name">Public lighting (DAP)</div><div class="tier-amt num">' + mxn.format(dap) + '</div></div>';
+    if(topup > 0){
+      html += '<div class="row minimum"><div class="tier-name">Top-up to minimum bill</div><div class="tier-amt num">' + mxn.format(topup) + '</div></div>';
+    }
+    html += '<div class="row grand"><div class="tier-name">Estimated total</div><div class="tier-amt num">' + mxn.format(total) + '</div></div>';
+    $('breakdown').innerHTML = html;
+
+    // gauge — usage vs the 1,200 kWh subsidy ceiling
+    var pct = Math.min(100, kwh / SUBSIDY_LIMIT * 100);
+    var headroom = SUBSIDY_LIMIT - kwh;
+    var fill = $('barFill'), state = $('gaugeState');
+    var color, stateText, stateBg, stateFg;
+    if(kwh <= 1000){ color='var(--green)'; stateText='Subsidised'; stateBg='rgba(63,185,80,.15)'; stateFg='var(--green)'; }
+    else if(kwh <= SUBSIDY_LIMIT){ color='var(--amber)'; stateText='Near the limit'; stateBg='rgba(245,166,35,.15)'; stateFg='var(--amber)'; }
+    else { color='var(--red)'; stateText='Into excess'; stateBg='rgba(229,72,77,.15)'; stateFg='var(--red)'; }
+    fill.style.width = pct + '%';
+    fill.style.background = color;
+    state.textContent = stateText; state.style.background = stateBg; state.style.color = stateFg;
+
+    if(headroom >= 0){ $('headroom').textContent = fmtKwh(headroom); $('headroom').parentNode.style.color='var(--text)'; }
+    else { $('headroom').textContent = '−' + fmtKwh(-headroom); $('headroom').parentNode.style.color='var(--red)'; }
+
+    $('gaugeNote').textContent =
+      'Stay under 1,200 kWh and every unit stays in the subsidised blocks. Go over, and each extra kWh is '
+      + 'charged at the excess rate (about MX$3.83) — roughly 4× the basic rate.';
+  }
+
+  function syncFromNum(){ $('kwhRange').value = Math.min(4000, num('kwhNum')); recompute(); }
+  function syncFromRange(){ $('kwhNum').value = $('kwhRange').value; recompute(); }
+  $('kwhNum').addEventListener('input', syncFromNum);
+  $('kwhRange').addEventListener('input', syncFromRange);
+
+  function project(){
+    var k=num('pKwh'), d=num('pDay'), len=num('pLen');
+    if(d>0){ $('kwhNum').value = Math.round(k/d*len); syncFromNum(); }
+  }
+  ['pKwh','pDay','pLen'].forEach(function(id){ $(id).addEventListener('input', project); });
+
+  var pt=$('projToggle'), pj=$('projector');
+  function toggleProj(){ var open=pj.classList.toggle('open'); pt.setAttribute('aria-expanded',open); if(open) project(); }
+  pt.addEventListener('click', toggleProj);
+  pt.addEventListener('keydown', function(ev){ if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();toggleProj();} });
+
+  document.querySelectorAll('#seasonSeg button').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('#seasonSeg button').forEach(function(x){x.classList.remove('active');});
+      b.classList.add('active'); recompute();
+    });
+  });
+
+  ['v_b_lim','v_b_pre','v_i1_lim','v_i1_pre','v_i2_lim','v_i2_pre','v_e_pre',
+   'w_b_lim','w_b_pre','w_i1_lim','w_i1_pre','w_i2_lim','w_i2_pre','w_e_pre',
+   'cargoFijo','ivaPct','dapPct','minCharge'].forEach(function(id){
+    var el=$(id); if(el) el.addEventListener('input', recompute);
+  });
+
+  recompute();
+
+  // Client identity (injected by the backend)
+  var who = document.getElementById('heroClient');
+  if(who && window.CLIENT_NAME){
+    who.textContent = window.CLIENT_NAME;
+    if(window.CLIENT_HOUSE){
+      var house = document.createElement('span');
+      house.className = 'house';
+      house.textContent = ' · ' + window.CLIENT_HOUSE;
+      who.appendChild(house);
+    }
+  }
+
+  // ── Automatic mode: pull the live projection from VRM when served by the backend ──
+  var CODE = window.CODE, BASE = window.API_BASE || '';
+  var banner = document.getElementById('autoBanner');
+  if(!CODE){ document.body.classList.add('manual'); return; }  // manual mode (file://)
+  banner.textContent = 'Loading your usage…';
+
+  var kwhNum = document.getElementById('kwhNum');
+  function setKwh(v){ kwhNum.value = Math.round(v); kwhNum.dispatchEvent(new Event('input',{bubbles:true})); }
+
+  fetch(BASE + '/api/recibo/' + CODE)
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d.error){ banner.classList.add('warn'); banner.textContent = "Could not update your usage right now."; return; }
+      if(d.period_just_started){
+        banner.textContent = 'New billing period just started — your estimate will be ready in a few days';
+        setKwh(0);
+        kwhNum.setAttribute('readonly','');
+        return;
+      }
+      setKwh(d.billed_kwh);
+      kwhNum.setAttribute('readonly','');
+      if(d.billed_kwh <= 0){
+        banner.innerHTML = '<b>' + Math.round(d.bolsa_balance) + ' kWh credit</b> — fully covered by your energy bank · minimum bill only';
+      } else {
+        banner.innerHTML = '<b>' + Math.round(d.bolsa_balance) + ' kWh</b> bank applied · <b>'
+          + Math.round(d.billed_kwh) + ' kWh</b> billed · day ' + d.period.days_elapsed + ' of ' + d.period.days_total;
+      }
+    })
+    .catch(function(){ banner.classList.add('warn'); banner.textContent = "Could not update your usage right now."; });
+})();
+</script>
+</body>
+</html>

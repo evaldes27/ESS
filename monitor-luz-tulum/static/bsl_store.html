@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BSL BATT STORE — Baterías de Litio LiFePO₄</title>
+<meta name="description" content="BSL BATT STORE: baterías de litio LiFePO₄ BSLBATT. Cotiza y ordena en línea, descarga fichas técnicas. Envíos a toda la República.">
+<meta property="og:title" content="BSL BATT STORE">
+<meta property="og:description" content="Baterías de litio LiFePO₄ BSLBATT · Ordena en línea con atención por WhatsApp.">
+<meta property="og:image" content="https://tengoluz.mx/static/bsl_logo.png">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23e60012'/><text x='50' y='72' font-size='60' text-anchor='middle' fill='white'>⚡</text></svg>">
+<style>
+  :root{
+    --navy:#161616; --blue:#e60012; --blue-d:#b3000e;
+    --bg:#f6f5f5; --card:#ffffff; --text:#222222; --muted:#767676; --line:#e7e5e5;
+    --danger:#d64545; --wa:#25d366;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
+  body{background:var(--bg);color:var(--text)}
+  a{color:var(--blue)}
+  button{cursor:pointer;font-family:inherit}
+
+  header{background:var(--navy);color:#fff;position:sticky;top:0;z-index:50;box-shadow:0 2px 10px rgba(0,0,0,.2)}
+  .topbar{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:16px;padding:12px 20px}
+  .logo{display:flex;align-items:center;gap:10px;white-space:nowrap}
+  .logo .lg{background:#fff;border-radius:8px;padding:5px 10px;display:flex;align-items:center}
+  .logo .lg img{height:32px;display:block}
+  .logo h1{font-size:17px;line-height:1.15;letter-spacing:.5px}
+  .logo small{display:block;font-weight:600;font-size:11px;color:#c9c9c9;letter-spacing:.3px}
+  .search{flex:1;display:flex}
+  .search input{flex:1;padding:10px 14px;border:none;border-radius:6px 0 0 6px;font-size:14px;outline:none}
+  .search button{padding:10px 16px;border:none;background:var(--blue);color:#fff;font-weight:700;border-radius:0 6px 6px 0}
+  .hdr-actions{display:flex;align-items:center;gap:10px}
+  .lang-toggle{display:flex;border:1px solid #4a4a4a;border-radius:6px;overflow:hidden}
+  .lang-toggle button{background:transparent;color:#bdbdbd;border:none;padding:7px 12px;font-weight:700;font-size:13px}
+  .lang-toggle button.active{background:var(--blue);color:#fff}
+  .cart-btn{position:relative;background:var(--blue);color:#fff;border:none;padding:10px 16px;border-radius:6px;font-weight:600;font-size:14px}
+  .cart-count{position:absolute;top:-8px;right:-8px;background:#fff;color:var(--blue);border-radius:50%;min-width:20px;height:20px;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px;border:1px solid var(--blue)}
+
+  nav.cats{background:#2a2a2a}
+  nav.cats .inner{max-width:1200px;margin:0 auto;display:flex;gap:4px;padding:0 20px;overflow-x:auto}
+  nav.cats button{background:transparent;border:none;color:#c9c9c9;padding:12px 16px;font-size:14px;font-weight:600;white-space:nowrap;border-bottom:3px solid transparent}
+  nav.cats button.active{color:#fff;border-bottom-color:var(--blue)}
+
+  .hero{background:linear-gradient(120deg,#161616 0%,#3a0508 60%,#b3000e 100%);color:#fff;padding:36px 20px;text-align:center}
+  .hero h2{font-size:26px;margin-bottom:8px}
+  .hero p{color:#e3c9ca;font-size:15px;max-width:640px;margin:0 auto}
+
+  main{max-width:1200px;margin:0 auto;padding:24px 20px 60px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .15s, transform .15s}
+  .card:hover{box-shadow:0 8px 24px rgba(179,0,14,.15);transform:translateY(-2px)}
+  .card .img{height:180px;display:flex;align-items:center;justify-content:center;font-size:56px;background:#fff;border-bottom:1px solid var(--line);padding:12px}
+  .card .img img{max-width:100%;max-height:100%;object-fit:contain}
+  .card .body{padding:14px 16px;display:flex;flex-direction:column;gap:6px;flex:1}
+  .sku{font-size:12px;color:var(--muted);letter-spacing:.5px}
+  .card h3{font-size:16px;color:var(--navy)}
+  .specs{font-size:13px;color:var(--muted);line-height:1.5}
+  .price{font-size:20px;font-weight:800;color:var(--blue-d);margin-top:auto}
+  .price small{font-size:12px;color:var(--muted);font-weight:400}
+  .stock{font-size:12px;font-weight:700}
+  .stock.in{color:#2e8b3d}.stock.out{color:var(--danger)}
+  .card .actions{display:flex;gap:8px;padding:0 16px 16px}
+  .btn{border:none;border-radius:7px;padding:10px 12px;font-size:13px;font-weight:700}
+  .btn-add{flex:1;background:var(--blue);color:#fff}
+  .btn-add:hover{background:var(--blue-d)}
+  .btn-add:disabled{background:#b8c4d2;cursor:not-allowed}
+  .btn-ds{background:#faeeee;color:var(--blue-d);border:1px solid #eccbcd}
+  .btn-ds:hover{background:#f7dfe0}
+
+  .overlay{position:fixed;inset:0;background:rgba(20,20,20,.55);z-index:90;display:none}
+  .overlay.open{display:block}
+  .drawer{position:fixed;top:0;right:-460px;width:min(460px,100vw);height:100vh;background:#fff;z-index:100;box-shadow:-6px 0 30px rgba(0,0,0,.2);transition:right .25s;display:flex;flex-direction:column}
+  .drawer.open{right:0}
+  .drawer header{position:static;background:var(--navy);padding:16px 20px;display:flex;justify-content:space-between;align-items:center}
+  .drawer header h3{font-size:17px}
+  .drawer header button{background:none;border:none;color:#fff;font-size:22px}
+  .drawer .items{flex:1;overflow-y:auto;padding:16px 20px}
+  .ci{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);align-items:center}
+  .ci .em{font-size:30px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex-shrink:0}
+  .ci .em img{max-width:100%;max-height:100%;object-fit:contain}
+  .ci .inf{flex:1}
+  .ci .inf b{font-size:14px;color:var(--navy)}
+  .ci .inf div{font-size:12px;color:var(--muted)}
+  .qty{display:flex;align-items:center;gap:6px}
+  .qty button{width:26px;height:26px;border:1px solid var(--line);background:#fff;border-radius:5px;font-weight:700}
+  .qty span{min-width:24px;text-align:center;font-weight:700;font-size:14px}
+  .ci .rm{background:none;border:none;color:var(--danger);font-size:16px}
+  .totals{padding:16px 20px;border-top:2px solid var(--line);font-size:14px}
+  .totals .row{display:flex;justify-content:space-between;padding:3px 0}
+  .totals .grand{font-size:17px;font-weight:800;color:var(--navy);padding-top:8px}
+  .btn-checkout{margin:0 20px 20px;padding:14px;background:var(--blue);color:#fff;font-size:15px;border-radius:8px;border:none;font-weight:800}
+  .btn-checkout:hover{background:var(--blue-d)}
+  .btn-checkout:disabled{background:#d8cfcf;color:#938a8a}
+  .empty{color:var(--muted);text-align:center;margin-top:40px;font-size:14px}
+
+  .modal{position:fixed;inset:0;z-index:110;display:none;align-items:flex-start;justify-content:center;overflow-y:auto;background:rgba(20,20,20,.6);padding:30px 14px}
+  .modal.open{display:flex}
+  .modal .box{background:#fff;border-radius:14px;width:100%;max-width:640px;padding:26px 28px}
+  .box h3{color:var(--navy);margin-bottom:16px;font-size:20px}
+  .frm{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .frm .full{grid-column:1/-1}
+  .frm label{font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px}
+  .frm input,.frm textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:7px;font-size:14px;font-family:inherit}
+  .pay-note{grid-column:1/-1;background:#f2fbf5;border:1px solid #bfe8cc;border-radius:9px;padding:12px;font-size:12px;color:#1e6b35;line-height:1.5}
+  .modal .btns{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
+  .btn-sec{background:#eef1f5;color:var(--text)}
+  .btn-pri{background:var(--blue);color:#fff;padding:12px 22px}
+  .btn-wa{background:var(--wa);color:#fff;padding:12px 22px}
+
+  #invoiceModal .box{max-width:760px}
+  .inv{border:1px solid var(--line);border-radius:10px;padding:26px;font-size:13px}
+  .inv-head{display:flex;justify-content:space-between;margin-bottom:18px}
+  .inv-head h2{color:var(--navy);font-size:20px}
+  .inv-head .meta{text-align:right;font-size:12px;color:var(--muted)}
+  .inv-head .meta b{color:var(--navy);font-size:14px}
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:.5px;background:#fdf1dc;color:#b07a1e}
+  .inv table{width:100%;border-collapse:collapse;margin:14px 0}
+  .inv th{background:var(--navy);color:#fff;text-align:left;padding:8px 10px;font-size:12px}
+  .inv td{padding:8px 10px;border-bottom:1px solid var(--line)}
+  .inv .tr{text-align:right}
+  .inv tfoot td{border:none;font-weight:700}
+  .inv .bill{display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:12px;color:var(--muted);margin-bottom:6px}
+  .inv .bill b{color:var(--navy)}
+  .inv .foot{margin-top:16px;font-size:11px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy);color:#fff;padding:12px 22px;border-radius:30px;font-size:14px;z-index:200;opacity:0;transition:all .3s}
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+  footer{background:var(--navy);color:#9fb3cc;text-align:center;padding:24px;font-size:13px}
+
+  .wa-float{position:fixed;bottom:18px;right:18px;background:var(--wa);color:#fff;width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 4px 14px rgba(0,0,0,.25);z-index:80;text-decoration:none}
+
+  @media print{
+    body *{visibility:hidden}
+    #invoiceModal, #invoiceModal *{visibility:visible}
+    #invoiceModal{position:absolute;inset:0;background:#fff;padding:0}
+    #invoiceModal .box{box-shadow:none;max-width:100%}
+    #invoiceModal .btns{display:none}
+    .wa-float{display:none}
+  }
+  @media(max-width:640px){
+    .topbar{flex-wrap:wrap}
+    .search{order:3;width:100%;flex-basis:100%}
+    .frm{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="topbar">
+    <div class="logo">
+      <div class="lg"><img src="https://tengoluz.mx/static/bsl_logo.png" alt="BSLBATT MEXICO" onerror="this.parentElement.innerHTML='<b style=color:#e60012;font-size:20px>BSLBATT</b>'"></div>
+      <h1>BSL BATT STORE<small data-i18n="tagline">Distribuidor Autorizado BSLBATT</small></h1>
+    </div>
+    <div class="search">
+      <input id="searchInput" data-i18n-ph="searchPh" placeholder="Buscar baterías, modelos, voltaje..." oninput="render()">
+      <button onclick="render()">🔍</button>
+    </div>
+    <div class="hdr-actions">
+      <div class="lang-toggle">
+        <button id="btnES" class="active" onclick="setLang('es')">ES</button>
+        <button id="btnEN" onclick="setLang('en')">EN</button>
+      </div>
+      <button class="cart-btn" onclick="toggleCart(true)">🛒 <span data-i18n="cart">Carrito</span><span class="cart-count" id="cartCount">0</span></button>
+    </div>
+  </div>
+  <nav class="cats"><div class="inner" id="catNav"></div></nav>
+</header>
+
+<section class="hero">
+  <h2 data-i18n="heroT">Baterías de Litio LiFePO₄ BSLBATT</h2>
+  <p data-i18n="heroP">Arma tu pedido en línea y recibe atención inmediata por WhatsApp. Descarga fichas técnicas. Envíos a toda la República.</p>
+</section>
+
+<main>
+  <div class="grid" id="grid"></div>
+</main>
+
+<footer>
+  <div>© 2026 BSL BATT STORE · <span data-i18n="footT">Distribuidor autorizado BSLBATT</span></div>
+</footer>
+
+<a class="wa-float" id="waFloat" href="#" target="_blank" rel="noopener" title="WhatsApp">🟢</a>
+
+<!-- Cart drawer -->
+<div class="overlay" id="overlay" onclick="toggleCart(false)"></div>
+<div class="drawer" id="drawer">
+  <header><h3 data-i18n="cartT">Tu carrito</h3><button onclick="toggleCart(false)">✕</button></header>
+  <div class="items" id="cartItems"></div>
+  <div class="totals" id="cartTotals"></div>
+  <button class="btn-checkout" id="btnCheckout" onclick="openCheckout()" data-i18n="checkout">Proceder al pedido</button>
+</div>
+
+<!-- Checkout modal -->
+<div class="modal" id="checkoutModal">
+  <div class="box">
+    <h3 data-i18n="coT">Datos del pedido</h3>
+    <form id="coForm" class="frm" onsubmit="placeOrder(event)">
+      <div><label data-i18n="fName">Nombre completo *</label><input required id="fName"></div>
+      <div><label data-i18n="fCompany">Empresa</label><input id="fCompany"></div>
+      <div><label data-i18n="fEmail">Correo electrónico *</label><input required type="email" id="fEmail"></div>
+      <div><label data-i18n="fPhone">Teléfono *</label><input required id="fPhone"></div>
+      <div><label data-i18n="fRFC">RFC (para factura)</label><input id="fRFC"></div>
+      <div><label data-i18n="fCP">Código postal</label><input id="fCP"></div>
+      <div class="full"><label data-i18n="fAddr">Dirección de envío *</label><textarea required id="fAddr" rows="2"></textarea></div>
+      <div class="pay-note" data-i18n="payNote">💬 Al confirmar, tu pedido se envía por <b>WhatsApp</b> a nuestro equipo de ventas. Te responderemos de inmediato con tu <b>liga de pago segura (tarjeta vía Openpay)</b> o datos para transferencia, y la confirmación de envío.</div>
+      <div class="btns full" style="grid-column:1/-1">
+        <button type="button" class="btn btn-sec" onclick="closeModal('checkoutModal')" data-i18n="cancel">Cancelar</button>
+        <button type="submit" class="btn btn-wa" data-i18n="place">Enviar pedido por WhatsApp</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Order modal -->
+<div class="modal" id="invoiceModal">
+  <div class="box">
+    <div class="inv" id="invBody"></div>
+    <div class="btns">
+      <button class="btn btn-sec" onclick="closeModal('invoiceModal')" data-i18n="close">Cerrar</button>
+      <button class="btn btn-pri" onclick="window.print()" data-i18n="printInv">🖨 Imprimir / Guardar PDF</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================================
+   CONFIGURACIÓN
+   ===================================================================== */
+const WHATSAPP = "529988669842";   // Ventas: Alejandra León
+const IVA = 0.16;
+
+/* PRODUCTOS — price en la moneda indicada. taxInc=true si el precio ya incluye IVA */
+const PRODUCTS = [
+  {sku:"B-LFP48-100E", cat:"48v", em:"🗄️", cur:"USD", price:810, taxInc:false,
+   img:"https://www.bsl-battery.com/uploads/ad0f37f6.png",
+   name:{es:"Rack 51.2V 100Ah · 5.12 kWh",en:"Rack 51.2V 100Ah · 5.12 kWh"},
+   specs:{es:"Rack 19\" · 6000+ ciclos · 95% DoD · CAN/RS485/WiFi/BT · Paralelo x63",en:"19\" rack · 6000+ cycles · 95% DoD · CAN/RS485/WiFi/BT · Parallel x63"},
+   stock:true, datasheet:"https://www.bsl-battery.com/uploads/d0ced8f0.pdf"},
+  {sku:"B-LFP48-120PW", cat:"wall", em:"⬜", cur:"USD", price:1217, taxInc:false,
+   img:"https://www.bsl-battery.com/uploads/6.5kWh-lithium-battery.png",
+   name:{es:"PowerWall 51.2V 127Ah · 6.5 kWh",en:"PowerWall 51.2V 127Ah · 6.5 kWh"},
+   specs:{es:"Montaje en pared · Descarga continua 2C · Paralelo x32 (hasta 208 kWh)",en:"Wall mount · 2C continuous discharge · Parallel x32 (up to 208 kWh)"},
+   stock:true, datasheet:"https://tengoluz.mx/static/B-LFP48-120PW.pdf"},
+  {sku:"PowerLine-5", cat:"wall", em:"⬜", cur:"USD", price:1180, taxInc:false,
+   img:"https://www.bsl-battery.com/uploads/Solar-Power-Wall-Battery.png",
+   name:{es:"PowerWall 51.2V 100Ah · 5.12 kWh",en:"PowerWall 51.2V 100Ah · 5.12 kWh"},
+   specs:{es:"Montaje en pared · Solo 90 mm de grosor · 6000 ciclos @90% DoD · Paralelo x32",en:"Wall mount · Only 90 mm thick · 6000 cycles @90% DoD · Parallel x32"},
+   stock:true, datasheet:"https://tengoluz.mx/static/PW5.pdf"},
+  {sku:"EnergiPak 3840", cat:"port", em:"🔌", cur:"MXN", price:40000, taxInc:true,
+   img:"https://www.bsl-battery.com/uploads/Portable-Power-Station1.png",
+   name:{es:"Estación portátil 3.84 kWh · 3600W",en:"Portable Power Station 3.84 kWh · 3600W"},
+   specs:{es:"UPS <10ms · 4000+ ciclos · Carga solar/AC/auto · +10 salidas · 40 kg",en:"UPS <10ms · 4000+ cycles · Solar/AC/car charging · 10+ outlets · 40 kg"},
+   stock:true, datasheet:"https://www.bsl-battery.com/uploads/8c95f534.pdf"},
+];
+
+/* ---------------- i18n ---------------- */
+const T = {
+  es:{tagline:"Distribuidor Autorizado BSLBATT",searchPh:"Buscar baterías, modelos, voltaje...",cart:"Carrito",
+      heroT:"Baterías de Litio LiFePO₄ BSLBATT",heroP:"Arma tu pedido en línea y recibe atención inmediata por WhatsApp. Descarga fichas técnicas. Envíos a toda la República.",
+      catAll:"Todos",cat48:"Rack 48V",catWall:"PowerWall",catPort:"Portátiles",
+      add:"Agregar",soldout:"Agotado",ds:"Ficha técnica",
+      inStock:"En existencia",outStock:"Sobre pedido",unitPlus:"+ IVA",unitInc:"IVA incluido",
+      cartT:"Tu carrito",emptyCart:"Tu carrito está vacío",subtotal:"Subtotal",iva:"IVA (16%)",total:"Total",checkout:"Proceder al pedido",
+      coT:"Datos del pedido",fName:"Nombre completo *",fCompany:"Empresa",fEmail:"Correo electrónico *",fPhone:"Teléfono *",fRFC:"RFC (para factura)",fCP:"Código postal",fAddr:"Dirección de envío *",
+      payNote:"💬 Al confirmar, tu pedido se envía por <b>WhatsApp</b> a nuestro equipo de ventas. Te responderemos de inmediato con tu <b>liga de pago segura (tarjeta vía Openpay)</b> o datos para transferencia, y la confirmación de envío.",
+      cancel:"Cancelar",place:"Enviar pedido por WhatsApp",close:"Cerrar",printInv:"🖨 Imprimir / Guardar PDF",
+      ordT:"ORDEN DE PEDIDO",quote:"POR CONFIRMAR",orderN:"Pedido No.",date:"Fecha",billTo:"Cliente",shipTo:"Envío a",
+      thP:"Producto",thQ:"Cant.",thU:"P. Unitario",thT:"Importe",
+      invFoot:"Documento generado por BSL BATT STORE. Este documento no es un CFDI; la factura fiscal se emite al confirmar el pago. Precios USD pagaderos en MXN al tipo de cambio del día.",
+      added:"agregado al carrito",orderOk:"✅ Pedido enviado por WhatsApp. Te contactaremos en breve.",
+      footT:"Distribuidor autorizado BSLBATT",
+      waHead:"*NUEVO PEDIDO — BSL BATT STORE*",waClient:"Cliente",waTotal:"TOTAL"},
+  en:{tagline:"Authorized BSLBATT Distributor",searchPh:"Search batteries, models, voltage...",cart:"Cart",
+      heroT:"BSLBATT LiFePO₄ Lithium Batteries",heroP:"Build your order online and get immediate service via WhatsApp. Download datasheets. Nationwide shipping.",
+      catAll:"All",cat48:"48V Rack",catWall:"PowerWall",catPort:"Portable",
+      add:"Add to cart",soldout:"Sold out",ds:"Datasheet",
+      inStock:"In stock",outStock:"On request",unitPlus:"+ tax",unitInc:"tax included",
+      cartT:"Your cart",emptyCart:"Your cart is empty",subtotal:"Subtotal",iva:"Tax (16%)",total:"Total",checkout:"Proceed to order",
+      coT:"Order details",fName:"Full name *",fCompany:"Company",fEmail:"Email *",fPhone:"Phone *",fRFC:"Tax ID (RFC)",fCP:"ZIP code",fAddr:"Shipping address *",
+      payNote:"💬 When you confirm, your order is sent via <b>WhatsApp</b> to our sales team. We'll reply right away with your <b>secure payment link (card via Openpay)</b> or bank transfer details, plus shipping confirmation.",
+      cancel:"Cancel",place:"Send order via WhatsApp",close:"Close",printInv:"🖨 Print / Save PDF",
+      ordT:"PURCHASE ORDER",quote:"PENDING CONFIRMATION",orderN:"Order No.",date:"Date",billTo:"Bill to",shipTo:"Ship to",
+      thP:"Product",thQ:"Qty",thU:"Unit price",thT:"Amount",
+      invFoot:"Document generated by BSL BATT STORE. This is not a fiscal invoice (CFDI); the fiscal invoice is issued upon payment confirmation. USD prices payable in MXN at the day's exchange rate.",
+      added:"added to cart",orderOk:"✅ Order sent via WhatsApp. We'll contact you shortly.",
+      footT:"Authorized BSLBATT distributor",
+      waHead:"*NEW ORDER — BSL BATT STORE*",waClient:"Client",waTotal:"TOTAL"}
+};
+let lang = "es";
+const t = k => T[lang][k] || k;
+
+const CATS = [["all","catAll"],["48v","cat48"],["wall","catWall"],["port","catPort"]];
+let activeCat = "all";
+let cart = {};
+let orderSeq = Math.floor(1000 + Math.random()*100);
+
+const loc = () => lang==="es"?"es-MX":"en-US";
+const money = (n,cur) => n.toLocaleString(loc(),{style:"currency",currency:cur, minimumFractionDigits:cur==="USD"?0:0, maximumFractionDigits:2}) + " " + cur;
+const dd = iso => new Date(iso+"T12:00:00").toLocaleDateString(loc(),{year:"numeric",month:"long",day:"numeric"});
+const priceLabel = p => `${money(p.price,p.cur)} <small>${p.taxInc?t("unitInc"):t("unitPlus")}</small>`;
+
+document.getElementById("waFloat").href = "https://wa.me/"+WHATSAPP;
+
+function setLang(l){
+  lang = l;
+  document.getElementById("btnES").classList.toggle("active", l==="es");
+  document.getElementById("btnEN").classList.toggle("active", l==="en");
+  document.documentElement.lang = l;
+  document.querySelectorAll("[data-i18n]").forEach(el=>el.innerHTML = t(el.dataset.i18n));
+  document.querySelectorAll("[data-i18n-ph]").forEach(el=>el.placeholder = t(el.dataset.i18nPh));
+  renderCats(); render(); renderCart();
+}
+
+function renderCats(){
+  document.getElementById("catNav").innerHTML = CATS.map(([id,key])=>
+    `<button class="${activeCat===id?'active':''}" onclick="activeCat='${id}';renderCats();render()">${t(key)}</button>`).join("");
+}
+
+function render(){
+  const q = document.getElementById("searchInput").value.trim().toLowerCase();
+  const list = PRODUCTS.filter(p =>
+    (activeCat==="all"||p.cat===activeCat) &&
+    (!q || p.sku.toLowerCase().includes(q) || p.name[lang].toLowerCase().includes(q) || p.specs[lang].toLowerCase().includes(q)));
+  document.getElementById("grid").innerHTML = list.map(p=>`
+    <div class="card">
+      <div class="img">${p.img?`<img src="${p.img}" alt="${p.sku}" loading="lazy" onerror="this.outerHTML='${p.em}'">`:p.em}</div>
+      <div class="body">
+        <span class="sku">${p.sku}</span>
+        <h3>${p.name[lang]}</h3>
+        <div class="specs">${p.specs[lang]}</div>
+        <span class="stock ${p.stock?'in':'out'}">● ${p.stock?t("inStock"):t("outStock")}</span>
+        <div class="price">${priceLabel(p)}</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-add" onclick="addToCart('${p.sku}')">${t("add")}</button>
+        <button class="btn btn-ds" onclick="window.open(PRODUCTS.find(x=>x.sku==='${p.sku}').datasheet,'_blank')">📄 ${t("ds")}</button>
+      </div>
+    </div>`).join("");
+}
+
+function addToCart(sku){
+  cart[sku] = (cart[sku]||0)+1;
+  toast(`${sku} ${t("added")}`);
+  renderCart();
+}
+function chQty(sku,d){
+  cart[sku]+=d;
+  if(cart[sku]<=0) delete cart[sku];
+  renderCart();
+}
+function rmItem(sku){ delete cart[sku]; renderCart(); }
+
+/* Totales por moneda: USD (sin IVA, se suma) y MXN (IVA incluido) */
+function cartTotals(){
+  let usdSub=0, mxnTot=0, count=0;
+  for(const sku in cart){
+    const p=PRODUCTS.find(x=>x.sku===sku); const q=cart[sku]; count+=q;
+    if(p.cur==="USD") usdSub += p.price*q;
+    else mxnTot += p.price*q;      // MXN taxInc
+  }
+  return {usdSub, usdIva:usdSub*IVA, usdTot:usdSub*(1+IVA), mxnTot, count};
+}
+
+function totalsRows(tt){
+  let h="";
+  if(tt.usdSub>0){
+    h+=`<div class="row"><span>${t("subtotal")} USD</span><span>${money(tt.usdSub,"USD")}</span></div>
+        <div class="row"><span>${t("iva")}</span><span>${money(tt.usdIva,"USD")}</span></div>
+        <div class="row grand"><span>${t("total")} USD</span><span>${money(tt.usdTot,"USD")}</span></div>`;
+  }
+  if(tt.mxnTot>0){
+    h+=`<div class="row grand"><span>${t("total")} MXN <small style="font-weight:400;font-size:11px">(${t("unitInc")})</small></span><span>${money(tt.mxnTot,"MXN")}</span></div>`;
+  }
+  return h;
+}
+
+function renderCart(){
+  const tt = cartTotals();
+  document.getElementById("cartCount").textContent = tt.count;
+  const box = document.getElementById("cartItems");
+  if(tt.count===0){
+    box.innerHTML = `<div class="empty">${t("emptyCart")} 🛒</div>`;
+    document.getElementById("cartTotals").innerHTML = "";
+    document.getElementById("btnCheckout").disabled = true;
+    return;
+  }
+  document.getElementById("btnCheckout").disabled = false;
+  box.innerHTML = Object.keys(cart).map(sku=>{
+    const p=PRODUCTS.find(x=>x.sku===sku);
+    return `<div class="ci">
+      <div class="em">${p.img?`<img src="${p.img}" alt="">`:p.em}</div>
+      <div class="inf"><b>${p.name[lang]}</b><div>${p.sku} · ${money(p.price,p.cur)} ${p.taxInc?t("unitInc"):t("unitPlus")}</div></div>
+      <div class="qty"><button onclick="chQty('${sku}',-1)">−</button><span>${cart[sku]}</span><button onclick="chQty('${sku}',1)">+</button></div>
+      <button class="rm" onclick="rmItem('${sku}')">🗑</button>
+    </div>`;}).join("");
+  document.getElementById("cartTotals").innerHTML = totalsRows(tt);
+}
+
+function toggleCart(open){
+  document.getElementById("drawer").classList.toggle("open",open);
+  document.getElementById("overlay").classList.toggle("open",open);
+}
+function openCheckout(){ toggleCart(false); document.getElementById("checkoutModal").classList.add("open"); }
+function closeModal(id){ document.getElementById(id).classList.remove("open"); }
+
+function placeOrder(e){
+  e.preventDefault();
+  const tt = cartTotals();
+  const order = {
+    num: "BSL-" + (++orderSeq),
+    iso: new Date().toISOString().slice(0,10),
+    client:{ name:fv("fName"), company:fv("fCompany"), email:fv("fEmail"), phone:fv("fPhone"), rfc:fv("fRFC"), cp:fv("fCP"), addr:fv("fAddr") },
+    items: Object.keys(cart).map(sku=>{ const p=PRODUCTS.find(x=>x.sku===sku); return {sku, name:p.name[lang], qty:cart[sku], price:p.price, cur:p.cur, taxInc:p.taxInc}; }),
+    ...tt
+  };
+  /* Mensaje de WhatsApp */
+  const L = [];
+  L.push(t("waHead"));
+  L.push(`${t("orderN")} ${order.num} · ${dd(order.iso)}`);
+  L.push("");
+  order.items.forEach(i=>L.push(`▪ ${i.qty}× ${i.sku} — ${money(i.price,i.cur)} ${i.taxInc?t("unitInc"):t("unitPlus")}`));
+  L.push("");
+  if(tt.usdSub>0) L.push(`${t("waTotal")} USD: ${money(tt.usdSub,"USD")} ${t("unitPlus")} = ${money(tt.usdTot,"USD")}`);
+  if(tt.mxnTot>0) L.push(`${t("waTotal")} MXN: ${money(tt.mxnTot,"MXN")} (${t("unitInc")})`);
+  L.push("");
+  const c=order.client;
+  L.push(`*${t("waClient")}:* ${c.name}${c.company?" · "+c.company:""}`);
+  if(c.rfc) L.push(`RFC: ${c.rfc}`);
+  L.push(`📧 ${c.email} · 📞 ${c.phone}`);
+  L.push(`📍 ${c.addr}${c.cp?" · C.P. "+c.cp:""}`);
+  window.open("https://wa.me/"+WHATSAPP+"?text="+encodeURIComponent(L.join("\n")),"_blank");
+
+  closeModal("checkoutModal");
+  showInvoice(order);
+  toast(t("orderOk"));
+  cart={}; renderCart();
+  document.getElementById("coForm").reset();
+}
+const fv = id => document.getElementById(id).value;
+
+function showInvoice(o){
+  const c=o.client;
+  let totFoot = "";
+  if(o.usdSub>0){
+    totFoot += `<tr><td colspan="3" class="tr">${t("subtotal")} USD</td><td class="tr">${money(o.usdSub,"USD")}</td></tr>
+      <tr><td colspan="3" class="tr">${t("iva")}</td><td class="tr">${money(o.usdIva,"USD")}</td></tr>
+      <tr><td colspan="3" class="tr" style="font-size:15px">${t("total")} USD</td><td class="tr" style="font-size:15px;color:var(--blue-d)">${money(o.usdTot,"USD")}</td></tr>`;
+  }
+  if(o.mxnTot>0){
+    totFoot += `<tr><td colspan="3" class="tr" style="font-size:15px">${t("total")} MXN (${t("unitInc")})</td><td class="tr" style="font-size:15px;color:var(--blue-d)">${money(o.mxnTot,"MXN")}</td></tr>`;
+  }
+  document.getElementById("invBody").innerHTML = `
+    <div class="inv-head">
+      <div>
+        <img src="https://tengoluz.mx/static/bsl_logo.png" alt="BSLBATT MEXICO" style="height:40px;margin-bottom:6px" onerror="this.outerHTML='<h2 style=color:#e60012>BSLBATT</h2>'">
+        <div style="font-size:11px;color:var(--muted)">BSL BATT STORE · ${t("tagline")}</div>
+        <div style="margin-top:10px"><span class="badge">${t("quote")}</span></div>
+      </div>
+      <div class="meta">
+        <b>${t("ordT")}</b><br>
+        ${t("orderN")}: <b>${o.num}</b><br>${t("date")}: ${dd(o.iso)}
+      </div>
+    </div>
+    <div class="bill">
+      <div><b>${t("billTo")}</b><br>${c.name}${c.company?`<br>${c.company}`:""}${c.rfc?`<br>RFC: ${c.rfc}`:""}<br>${c.email} · ${c.phone}</div>
+      <div><b>${t("shipTo")}</b><br>${c.addr}${c.cp?`<br>C.P. ${c.cp}`:""}</div>
+    </div>
+    <table>
+      <thead><tr><th>${t("thP")}</th><th class="tr">${t("thQ")}</th><th class="tr">${t("thU")}</th><th class="tr">${t("thT")}</th></tr></thead>
+      <tbody>${o.items.map(i=>`<tr><td>${i.sku}<br><span style="color:var(--muted);font-size:11px">${i.name}</span></td><td class="tr">${i.qty}</td><td class="tr">${money(i.price,i.cur)}</td><td class="tr">${money(i.price*i.qty,i.cur)}</td></tr>`).join("")}</tbody>
+      <tfoot>${totFoot}</tfoot>
+    </table>
+    <div class="foot">${t("invFoot")}</div>`;
+  document.getElementById("invoiceModal").classList.add("open");
+}
+
+let toastTimer;
+function toast(msg){
+  const el=document.getElementById("toast");
+  el.textContent=msg; el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove("show"),2600);
+}
+
+setLang("es");
+</script>
+</body>
+</html>

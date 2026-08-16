@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>¿Hay luz en mi casa? — tengoluz.mx</title>
+<meta name="description" content="Mapa en tiempo real de apagones de CFE por colonia. Consulta si hay luz en tu zona.">
+<meta property="og:title" content="¿Hay luz en mi casa?">
+<meta property="og:description" content="Estado de la red eléctrica por colonia, en tiempo real.">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --fondo:#0b1014;
+    --panel:#11181e;
+    --panel-2:#0e1419;
+    --linea:#1e2a32;
+    --texto:#ecf3f1;
+    --suave:#93a8a4;
+    --ambar:#ffb347;
+    --energia:#2ee6a8;
+    --apagon:#ff5a5a;
+    --voltaje:#ffb347;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    font-family:'Chivo',system-ui,-apple-system,sans-serif;
+    background:var(--fondo);color:var(--texto);
+    display:flex;flex-direction:column;
+    font-variant-numeric:tabular-nums;
+  }
+
+  /* ---------- Header ---------- */
+  header{
+    background:var(--panel);border-bottom:1px solid var(--linea);
+    padding:12px 16px 0;z-index:1100;
+  }
+  .marca{display:flex;align-items:center;gap:10px}
+  .rayo{
+    width:34px;height:34px;border-radius:10px;flex-shrink:0;
+    background:linear-gradient(160deg,#2a1f0e,#171208);
+    border:1px solid #3d2f14;
+    display:grid;place-items:center;
+    font-size:1.05rem;color:var(--ambar);
+  }
+  .rayo.alerta{animation:flicker 2.8s infinite}
+  @keyframes flicker{
+    0%,100%{opacity:1} 41%{opacity:1} 42%{opacity:.25} 44%{opacity:1}
+    45%{opacity:.6} 47%{opacity:1} 80%{opacity:1} 82%{opacity:.4} 84%{opacity:1}
+  }
+  .marca h1{font-size:1.22rem;font-weight:900;letter-spacing:-.02em;line-height:1.1}
+  .marca .dominio{font-size:.72rem;color:var(--ambar);font-weight:700;letter-spacing:.08em;text-transform:lowercase}
+  .resumen{margin:10px 0 0;display:flex;gap:8px;flex-wrap:wrap}
+  .chip{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:4px 11px;border-radius:999px;font-size:.78rem;font-weight:700;
+    border:1px solid var(--linea);background:var(--panel-2);
+  }
+  .chip .p{width:8px;height:8px;border-radius:50%}
+  .chip .p.ok{background:var(--energia)}
+  .chip .p.no{background:var(--apagon)}
+  .chip .p.volt{background:var(--voltaje)}
+
+  /* ---------- Tabs ---------- */
+  nav{display:flex;gap:2px;margin-top:12px}
+  nav button{
+    flex:1;padding:10px 6px;font:inherit;font-size:.82rem;font-weight:700;
+    color:var(--suave);background:none;border:none;cursor:pointer;
+    border-bottom:3px solid transparent;
+  }
+  nav button.activa{color:var(--ambar);border-bottom-color:var(--ambar)}
+  nav button:focus-visible{outline:2px solid var(--ambar);outline-offset:-2px}
+
+  main{flex:1;display:flex;flex-direction:column;min-height:0}
+  .tab{display:none;flex:1;flex-direction:column;min-height:0}
+  .tab.activa{display:flex}
+
+  /* ---------- Tab: Mapa ---------- */
+  #map{flex:1;min-height:46vh;background:var(--fondo)}
+  .leaflet-container{background:var(--fondo);font:inherit}
+
+  /* ---- Bottom sheet (mobile only) ---- */
+  @media(max-width:699px){
+    #tab-mapa{position:relative;overflow:hidden}
+    #map{position:absolute;inset:0;height:100%!important;min-height:unset}
+    .sheet{
+      position:absolute;bottom:0;left:0;right:0;
+      background:var(--panel);
+      border-radius:18px 18px 0 0;
+      border-top:1px solid var(--linea);
+      touch-action:none;
+      z-index:900;
+      transform:translateY(100%); /* hidden until JS init */
+      will-change:transform;
+    }
+    .sheet-handle{padding:10px 0 4px;cursor:grab;user-select:none;-webkit-user-select:none}
+    .sheet-handle:active{cursor:grabbing}
+    .handle-bar{
+      width:40px;height:4px;border-radius:999px;
+      background:rgba(255,255,255,.25);margin:0 auto;
+    }
+    .zonas{max-height:65vh;overflow-y:auto;border-top:1px solid var(--linea)}
+  }
+
+  /* Desktop: original layout */
+  @media(min-width:700px){
+    .sheet{display:contents}
+    .sheet-handle{display:none}
+    .zonas{background:var(--panel);border-top:1px solid var(--linea);
+      max-height:34vh;overflow-y:auto}
+  }
+  .zona{display:flex;align-items:center;gap:12px;padding:12px 16px;
+    border-bottom:1px solid var(--linea);cursor:pointer}
+  .zona:last-child{border-bottom:none}
+  .estado{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+  .estado.ok{background:var(--energia);box-shadow:0 0 10px rgba(46,230,168,.45)}
+  .estado.volt{background:var(--voltaje);box-shadow:0 0 10px rgba(255,179,71,.5);
+    animation:parpadeo 2s infinite}
+  .estado.no{background:var(--apagon);box-shadow:0 0 10px rgba(255,90,90,.55);
+    animation:parpadeo 1.4s infinite}
+  @keyframes parpadeo{50%{opacity:.35}}
+  .zona .info{flex:1;min-width:0}
+  .zona .nombre{font-size:.95rem;font-weight:700}
+  .zona .detalle{font-size:.74rem;color:var(--suave);margin-top:1px}
+  .zona .tiempo{font-size:.76rem;color:var(--suave);text-align:right;flex-shrink:0}
+  .zona .tiempo.no{color:var(--apagon);font-weight:700}
+  .zona .tiempo.volt{color:var(--voltaje);font-weight:700}
+  .voltajes{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .vfase{font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:6px;
+    background:rgba(46,230,168,.12);color:var(--energia);
+    border:1px solid rgba(46,230,168,.25);font-variant-numeric:tabular-nums}
+  .vfase.mal{background:rgba(255,179,71,.14);color:var(--voltaje);
+    border-color:rgba(255,179,71,.4)}
+  .vtipo{font-size:.68rem;color:var(--suave);padding:2px 7px;border-radius:6px;
+    border:1px solid var(--linea);background:rgba(255,255,255,.04);font-weight:600}
+  .marcador{width:18px;height:18px;border-radius:50%;
+    border:2.5px solid rgba(255,255,255,.88);box-sizing:border-box}
+  .marcador.ok{background:var(--energia)}
+  .marcador.volt{background:var(--voltaje)}
+  .marcador.no{background:var(--apagon)}
+  .pulso{position:absolute;inset:-8px;border-radius:50%;
+    border:2px solid var(--apagon);animation:expandir 1.6s ease-out infinite}
+  @keyframes expandir{from{transform:scale(.6);opacity:.9}to{transform:scale(1.5);opacity:0}}
+  @media (prefers-reduced-motion:reduce){
+    .estado.no,.pulso,.rayo.alerta{animation:none!important}
+  }
+  .btn-mapa{
+    width:36px;height:36px;border-radius:9px;cursor:pointer;
+    background:var(--panel);border:1px solid var(--linea);
+    font-size:1.05rem;line-height:1;display:grid;place-items:center;
+    box-shadow:0 2px 8px rgba(0,0,0,.45);
+  }
+  .btn-mapa:active{transform:scale(.95)}
+  .cluster-icon{width:36px;height:36px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:.8rem;font-weight:900;color:#fff;
+    border:2.5px solid rgba(255,255,255,.85)}
+  .cluster-icon.ok  {background:var(--energia);color:#0c1a14}
+  .cluster-icon.volt{background:var(--voltaje);color:#1a1206}
+  .cluster-icon.no  {background:var(--apagon)}
+  .leaflet-popup-content-wrapper{background:var(--panel);color:var(--texto);
+    border:1px solid var(--linea);border-radius:10px}
+  .leaflet-popup-tip{background:var(--panel)}
+  .leaflet-popup-content{margin:10px 14px;font-size:.85rem;line-height:1.45;font-family:'Chivo',sans-serif}
+  .ok-txt{color:var(--energia);font-weight:700}
+  .no-txt{color:var(--apagon);font-weight:700}
+  .volt-txt{color:var(--voltaje);font-weight:700}
+
+  /* ---------- Tab: Empresas ---------- */
+  .empresas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+    gap:12px;margin:16px 0}
+  .empresa-card{background:var(--panel);border:1px solid var(--linea);border-radius:14px;
+    padding:18px 14px;display:flex;flex-direction:column;align-items:center;gap:10px;
+    text-align:center}
+  .empresa-card img{height:48px;width:auto;max-width:130px;object-fit:contain}
+  .empresa-card .emp-nombre{font-size:.88rem;font-weight:700;color:var(--texto)}
+  .empresa-card .emp-ciudades{font-size:.72rem;color:var(--suave);line-height:1.4}
+  .empresa-card .emp-sitios{font-size:.72rem;color:var(--energia);font-weight:700;
+    padding:2px 8px;border-radius:999px;border:1px solid rgba(46,230,168,.3);
+    background:rgba(46,230,168,.08)}
+
+  /* logo instalador en popup */
+  .popup-instalador{display:flex;align-items:center;gap:8px;margin-top:8px;
+    padding-top:8px;border-top:1px solid rgba(255,255,255,.1)}
+  .popup-instalador img{height:22px;width:auto;max-width:100px;object-fit:contain}
+  .popup-instalador span{font-size:.75rem;color:#8aa3a0}
+  /* ---------- Misión ---------- */
+  .mision-divider{display:flex;align-items:center;gap:12px;margin:28px 0 20px}
+  .mision-linea{flex:1;height:1px;background:var(--linea)}
+  .mision-label{font-size:.7rem;font-weight:700;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ambar);white-space:nowrap}
+  .mision-hero{text-align:center;margin-bottom:20px}
+  .mision-rayo{font-size:2rem;margin-bottom:8px}
+  .mision-titulo{font-size:1.2rem;font-weight:900;letter-spacing:-.02em;
+    line-height:1.2;margin-bottom:6px}
+  .mision-sub{font-size:.88rem;color:var(--suave)}
+  .mision-pasos{display:flex;flex-direction:column;gap:0}
+  .mision-paso{display:flex;gap:14px;padding:14px 0;
+    border-bottom:1px solid var(--linea);position:relative}
+  .mision-paso:last-child{border-bottom:none}
+  .mp-num{flex-shrink:0;width:44px;font-size:.72rem;font-weight:700;
+    color:var(--suave);padding-top:3px}
+  .mision-paso.activo .mp-num{color:var(--ambar)}
+  .mp-txt b{font-size:.92rem;font-weight:700;display:block;margin-bottom:4px}
+  .mision-paso.activo .mp-txt b{color:var(--ambar)}
+  .mp-txt p{font-size:.84rem;color:var(--suave);line-height:1.55;margin:0}
+  .mp-txt em{color:var(--texto);font-style:italic}
+  .mision-nota{margin:18px 0 4px;padding:16px;background:rgba(255,179,71,.07);
+    border:1px solid rgba(255,179,71,.2);border-radius:14px;
+    font-size:.84rem;color:var(--suave);line-height:1.6}
+  .mision-nota b{color:var(--ambar)}
+  .como-paso{display:flex;gap:14px;margin-bottom:18px;align-items:flex-start}
+  .como-num{flex-shrink:0;width:32px;height:32px;border-radius:50%;
+    background:var(--ambar);color:#1a1206;font-weight:900;
+    display:grid;place-items:center;font-size:1rem}
+  .como-txt h3{font-size:.98rem;font-weight:700;margin-bottom:3px}
+  .como-txt p{font-size:.86rem;color:var(--suave);line-height:1.55}
+  .leyenda{display:grid;gap:10px;margin:10px 0 22px}
+  .ley{display:flex;gap:12px;align-items:flex-start;background:var(--panel);
+    border:1px solid var(--linea);border-radius:12px;padding:12px 14px}
+  .ley .dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;margin-top:3px}
+  .ley .dot.ok{background:var(--energia)}
+  .ley .dot.volt{background:var(--voltaje)}
+  .ley .dot.no{background:var(--apagon)}
+  .ley b{font-size:.9rem}
+  .ley span{font-size:.82rem;color:var(--suave);line-height:1.5}
+  .como-nota{background:rgba(255,179,71,.08);border:1px solid rgba(255,179,71,.25);
+    border-radius:12px;padding:14px 16px;margin-bottom:8px}
+  .como-nota b{font-size:.9rem;color:var(--voltaje)}
+  .como-nota p{font-size:.84rem;color:var(--suave);line-height:1.55;margin-top:5px}
+
+  /* ---------- Tab: Estadísticas ---------- */
+  .panel-scroll{overflow-y:auto;padding:18px 16px 28px}
+  /* ---------- Tab: Estadísticas ---------- */
+  .periodo-sel{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+  .per{padding:5px 13px;border-radius:999px;font:inherit;font-size:.78rem;font-weight:700;
+    border:1px solid var(--linea);background:var(--panel-2);color:var(--suave);cursor:pointer}
+  .per.activa{background:var(--ambar);color:#1a1206;border-color:var(--ambar)}
+
+  /* Tarjetas 2x2 */
+  .stat-card{background:var(--panel);border:1px solid var(--linea);border-radius:14px;
+    padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+  .stat-icon{font-size:1.2rem;line-height:1}
+  .stat-big{font-size:1.9rem;font-weight:900;letter-spacing:-.03em;line-height:1}
+  .stat-lbl{font-size:.76rem;color:var(--suave);font-weight:600}
+  .apagon-card .stat-big{color:var(--apagon)}
+  .tiempo-card .stat-big{color:var(--texto)}
+  .voltaje-card .stat-big{color:var(--voltaje)}
+  .zonas-card .stat-big{color:var(--energia)}
+
+  /* Sección con título */
+  .stat-section{background:var(--panel);border:1px solid var(--linea);border-radius:14px;padding:14px 16px}
+  .stat-section-title{font-size:.78rem;font-weight:700;color:var(--suave);
+    text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px}
+
+  /* Filas de zonas */
+  .zona-fila{margin-bottom:12px}
+  .zona-fila:last-child{margin-bottom:0}
+  .zona-fila-top{display:flex;justify-content:space-between;align-items:baseline;
+    gap:8px;margin-bottom:5px}
+  .zona-fila-nombre{font-size:.88rem;font-weight:700;color:var(--texto);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .zona-fila-dato{font-size:.74rem;color:var(--suave);flex-shrink:0}
+  .zona-track{height:8px;border-radius:999px;background:rgba(255,90,90,.15);overflow:hidden}
+  .zona-fill{height:100%;border-radius:999px;background:var(--apagon);
+    transition:width .5s cubic-bezier(.4,0,.2,1)}
+  .zona-volt-lbl{font-size:.72rem;color:var(--voltaje);margin-top:4px;font-weight:600}
+
+  /* Histograma */
+  .histo-wrap{display:flex;align-items:flex-end;gap:3px;height:72px;margin-top:4px}
+  .hcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%}
+  .hbar{width:100%;border-radius:3px 3px 0 0;background:var(--apagon);
+    min-height:3px;transition:height .4s ease}
+  .hlbl{font-size:.5rem;color:var(--suave);writing-mode:vertical-rl;
+    transform:rotate(180deg);height:24px;overflow:hidden}
+
+  /* Nota clientes */
+  .stat-nota{margin-top:14px;padding:14px 16px;background:rgba(46,230,168,.07);
+    border:1px solid rgba(46,230,168,.2);border-radius:14px;
+    font-size:.86rem;color:var(--suave);line-height:1.6;text-align:center}
+
+  /* ---------- Tab: Sin apagones (marketing) ---------- */
+  .hero-mkt{padding:26px 16px 8px}
+  .hero-mkt .eyebrow{font-size:.72rem;font-weight:700;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ambar);margin-bottom:8px}
+  .hero-mkt h2{font-size:1.55rem;font-weight:900;letter-spacing:-.02em;line-height:1.15;max-width:30ch}
+  .hero-mkt p{margin-top:10px;color:var(--suave);font-size:.92rem;line-height:1.55;max-width:52ch}
+  .pasos{padding:18px 16px;display:grid;gap:10px}
+  .paso{background:var(--panel);border:1px solid var(--linea);border-radius:14px;padding:14px 16px}
+  .paso h3{font-size:.95rem;font-weight:700;color:var(--texto);margin-bottom:4px}
+  .paso h3 span{color:var(--ambar);margin-right:6px}
+  .paso p{font-size:.84rem;color:var(--suave);line-height:1.5}
+  .galeria{padding:6px 16px 4px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .galeria figure{border-radius:12px;overflow:hidden;border:1px solid var(--linea);
+    aspect-ratio:4/3;background:var(--panel-2)}
+  .galeria img{width:100%;height:100%;object-fit:cover;display:block}
+  .cta{padding:22px 16px 34px;text-align:center}
+  .cta p{font-size:.88rem;color:var(--suave);margin-bottom:12px}
+  .btn-wa{
+    display:inline-flex;align-items:center;gap:9px;
+    background:var(--ambar);color:#1a1206;text-decoration:none;
+    font-weight:900;font-size:.95rem;padding:13px 26px;border-radius:999px;
+  }
+  .btn-wa:active{transform:scale(.98)}
+
+  .logo-header{height:68px;width:auto;max-width:46vw;object-fit:contain;
+    margin-left:auto;flex-shrink:1}
+  @media(max-width:380px){.logo-header{height:52px}}
+  .socios{padding:8px 16px 0;text-align:center}
+  .socios-titulo{font-size:.68rem;font-weight:700;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--suave);margin-bottom:10px}
+  .socios-logos{display:flex;justify-content:center;align-items:center;
+    gap:30px;flex-wrap:wrap}
+  .socios-logos img{height:44px;width:auto;max-width:180px;object-fit:contain;opacity:.9}
+  .socios-logos img.logo-centro{height:72px;max-width:240px;opacity:1}
+  footer .logo-footer{height:16px;width:auto;vertical-align:middle;
+    margin-right:6px;opacity:.85}
+
+  footer{padding:10px 16px;background:var(--panel);font-size:.7rem;
+    color:var(--suave);border-top:1px solid var(--linea);
+    display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+
+  @media(min-width:700px){
+    .marca h1{font-size:1.4rem}
+    .galeria{grid-template-columns:repeat(4,1fr)}
+    .pasos{grid-template-columns:repeat(3,1fr)}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="marca">
+    <div class="rayo" id="rayo">⚡</div>
+    <div>
+      <h1>¿Hay luz en mi casa?</h1>
+      <div class="dominio">tengoluz.mx</div>
+    </div>
+    <img class="logo-header" src="/static/img/logo-empresa.png"
+         alt="Los Amigos Energy" onerror="this.style.display='none'">
+  </div>
+  <div class="resumen">
+    <span class="chip"><span class="p ok"></span><span id="conLuz">–</span> con energía</span>
+    <span class="chip"><span class="p volt"></span><span id="voltMal">–</span> voltaje fuera de rango</span>
+    <span class="chip"><span class="p no"></span><span id="sinLuz">–</span> con apagón</span>
+  </div>
+  <nav>
+    <button class="activa" data-tab="mapa">Mapa</button>
+    <button data-tab="stats">Apagones</button>
+    <button data-tab="como">¿Cómo funciona?</button>
+    <button data-tab="empresas">Empresas</button>
+    <button data-tab="mkt">Sin apagones</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ============ MAPA ============ -->
+  <section class="tab activa" id="tab-mapa">
+    <div id="map"></div>
+    <!-- Bottom sheet (mobile only) -->
+    <div class="sheet" id="sheet">
+      <div class="sheet-handle" id="sheetHandle">
+        <div class="handle-bar"></div>
+      </div>
+      <div class="zonas" id="listaZonas"><div class="vacio" style="padding:18px 16px">Cargando estado…</div></div>
+    </div>
+  </section>
+
+  <!-- ============ ESTADÍSTICAS ============ -->
+  <section class="tab" id="tab-stats">
+    <div class="panel-scroll" id="statsContent">
+      <div class="vacio" style="padding:32px 0;text-align:center">Cargando…</div>
+    </div>
+  </section>
+
+  <!-- ============ CÓMO FUNCIONA ============ -->
+  <section class="tab" id="tab-como">
+    <div class="panel-scroll">
+      <h2>¿Cómo sabe esta página si hay luz?</h2>
+      <div class="sub">No usamos sensores en los postes de CFE. Usamos algo mejor: sistemas solares reales.</div>
+
+      <div class="como-paso">
+        <div class="como-num">1</div>
+        <div class="como-txt">
+          <h3>Cada instalación es un sensor</h3>
+          <p>En casas y negocios de la zona tenemos instalados sistemas solares con
+          baterías de la marca Victron. Estos equipos saben en todo momento si la
+          red de CFE está presente o no — es parte de su funcionamiento normal.</p>
+        </div>
+      </div>
+
+      <div class="como-paso">
+        <div class="como-num">2</div>
+        <div class="como-txt">
+          <h3>Leemos el estado cada 30 segundos</h3>
+          <p>Cada medio minuto le preguntamos a cada sistema, de forma segura, dos cosas:
+          ¿hay corriente de CFE? y ¿con qué voltaje está llegando? Esa información viaja
+          por internet hasta este mapa.</p>
+        </div>
+      </div>
+
+      <div class="como-paso">
+        <div class="como-num">3</div>
+        <div class="como-txt">
+          <h3>Lo pintamos en el mapa por colonia</h3>
+          <p>Agrupamos los sistemas por zona y mostramos el resultado con tres colores.
+          Para proteger la privacidad de cada cliente, nunca mostramos su domicilio:
+          solo el estado general de la colonia.</p>
+        </div>
+      </div>
+
+      <h2 style="font-size:1rem;margin-top:8px">Qué significa cada color</h2>
+      <div class="leyenda">
+        <div class="ley"><span class="dot ok"></span>
+          <div><b>Con energía</b><br><span>CFE presente y voltaje normal (113–135 V).</span></div></div>
+        <div class="ley"><span class="dot volt"></span>
+          <div><b>Voltaje fuera de rango</b><br><span>Hay luz, pero llega baja o alta. Puede dañar
+          equipos y suele anticipar problemas. Nuestros clientes están protegidos; los demás no.</span></div></div>
+        <div class="ley"><span class="dot no"></span>
+          <div><b>Apagón</b><br><span>No hay corriente de CFE en la zona.</span></div></div>
+      </div>
+
+      <div class="como-nota">
+        <b>¿Por qué importa el voltaje?</b>
+        <p>En México la corriente debería llegar a unos 127 V. Cuando baja mucho (un
+        “bajón”) o sube de más, los electrodomésticos sufren: refrigeradores, bombas,
+        minisplits y electrónica se desgastan o se queman. Un sistema con baterías
+        entrega siempre voltaje estable, sin importar lo que haga CFE.</p>
+      </div>
+
+
+      <!-- MISIÓN -->
+      <div class="mision-divider">
+        <span class="mision-linea"></span>
+        <span class="mision-label">Nuestra misión</span>
+        <span class="mision-linea"></span>
+      </div>
+
+      <div class="mision-hero">
+        <div class="mision-rayo">⚡</div>
+        <h2 class="mision-titulo">Microrredes inteligentes y distribuidas</h2>
+        <p class="mision-sub">El mapa que ves es el primer paso de algo mucho más grande.</p>
+      </div>
+
+      <div class="mision-pasos">
+        <div class="mision-paso activo">
+          <div class="mp-num">Hoy</div>
+          <div class="mp-txt">
+            <b>Monitoreo</b>
+            <p>Cada sistema solar es un sensor. Vemos en tiempo real el estado de la red eléctrica en cada colonia.</p>
+          </div>
+        </div>
+        <div class="mision-paso">
+          <div class="mp-num">Pronto</div>
+          <div class="mp-txt">
+            <b>Microrredes</b>
+            <p>Los sistemas dejan de operar solos y empiezan a colaborar entre sí. Las baterías de un vecindario se convierten en una sola reserva compartida.</p>
+          </div>
+        </div>
+        <div class="mision-paso">
+          <div class="mp-num">Futuro</div>
+          <div class="mp-txt">
+            <b>Red colaborativa con CFE</b>
+            <p>CFE nos envía una señal: <em>"la red está saturada — descarga tus baterías y apóyanos"</em> o <em>"hay excedente — carga ahora."</em> Menos apagones para todos. Una red más inteligente, más limpia.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="mision-nota">
+        <p>Los datos de este mapa — cada apagón, cada alerta de voltaje, cada zona afectada — son evidencia de dónde falla la red y dónde los recursos distribuidos pueden fortalecerla.</p>
+        <p style="margin-top:8px"><b>Ese es el valor real:</b> no solo informar, sino construir la inteligencia colectiva que hará posible la transición energética en México.</p>
+      </div>
+
+      <div class="cta" style="padding-top:8px">
+        <p>¿Quieres que tu casa nunca aparezca en amarillo ni en rojo?</p>
+        <a class="btn-wa" href="https://wa.me/5219988669842?text=Hola,%20vi%20tengoluz.mx%20y%20quiero%20saber%20m%C3%A1s"
+           target="_blank" rel="noopener">⚡ Cuéntame cómo</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ EMPRESAS ============ -->
+  <section class="tab" id="tab-empresas">
+    <div class="panel-scroll">
+      <h2>Red de instaladoras</h2>
+      <div class="sub">Empresas que contribuyen con sus sistemas como sensores de la red eléctrica.</div>
+      <div class="empresas-grid" id="empresasGrid">
+        <div class="vacio">Cargando empresas…</div>
+      </div>
+      <div class="como-nota" style="margin-top:16px">
+        <b>¿Quieres unirte a la red?</b>
+        <p>Si tienes instalaciones con sistemas Victron conectados al VRM Portal, puedes contribuir tus sitios al mapa. Cada instalación es un sensor más para toda la comunidad.</p>
+      </div>
+      <div class="cta" style="padding-top:8px">
+        <p>Contáctanos para integrar tus instalaciones.</p>
+        <a class="btn-wa" href="https://wa.me/5219988669842?text=Hola,%20quiero%20unir%20mis%20instalaciones%20a%20tengoluz.mx"
+           target="_blank" rel="noopener">⚡ Unirme a la red</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MARKETING ============ -->
+  <section class="tab" id="tab-mkt">
+    <div class="panel-scroll" style="padding:0">
+      <div class="hero-mkt">
+        <div class="eyebrow">Respaldo solar con baterías</div>
+        <h2>Cuando tu colonia aparece en rojo, nuestros clientes ni se enteran.</h2>
+        <p>Este mapa existe gracias a sistemas solares con baterías instalados en casas
+        y negocios reales. Cada punto de monitoreo es un cliente que sigue con luz,
+        internet y refrigerador funcionando mientras CFE regresa.</p>
+      </div>
+      <div class="pasos">
+        <div class="paso">
+          <h3><span>01</span>Paneles solares</h3>
+          <p>Generan tu propia energía de día y bajan tu recibo de CFE desde el primer mes.</p>
+        </div>
+        <div class="paso">
+          <h3><span>02</span>Baterías de respaldo</h3>
+          <p>Guardan energía para la noche y para los apagones. Horas de autonomía para lo esencial o para toda la casa.</p>
+        </div>
+        <div class="paso">
+          <h3><span>03</span>Cambio automático</h3>
+          <p>Cuando CFE falla, el sistema cambia a baterías en milisegundos. No parpadea ni el módem.</p>
+        </div>
+      </div>
+      <div class="galeria" id="galeria">
+        <figure><img src="/static/img/instalacion1.jpg" alt="Instalación solar" onerror="this.parentElement.style.display='none'"></figure>
+        <figure><img src="/static/img/instalacion2.jpg" alt="Instalación solar" onerror="this.parentElement.style.display='none'"></figure>
+        <figure><img src="/static/img/instalacion3.jpg" alt="Instalación solar" onerror="this.parentElement.style.display='none'"></figure>
+        <figure><img src="/static/img/instalacion4.jpg" alt="Instalación solar" onerror="this.parentElement.style.display='none'"></figure>
+      </div>
+      <div class="socios">
+        <div class="socios-titulo">Instalación y tecnología</div>
+        <div class="socios-logos">
+          <img src="/static/img/logo-victron.png" alt="Victron Energy"
+               onerror="this.style.display='none'">
+          <img class="logo-centro" src="/static/img/logo-empresa.png" alt="Los Amigos Energy"
+               onerror="this.style.display='none'">
+          <img src="/static/img/logo-bsl.png" alt="BSLBATT Battery"
+               onerror="this.style.display='none'">
+        </div>
+      </div>
+      <div class="cta">
+        <p>Cotiza tu sistema sin compromiso. Te respondemos por WhatsApp.</p>
+        <a class="btn-wa" href="https://wa.me/5219988669842?text=Hola,%20vi%20tengoluz.mx%20y%20quiero%20cotizar%20un%20sistema%20de%20respaldo"
+           target="_blank" rel="noopener">⚡ Quiero luz siempre</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span><img class="logo-footer" src="/static/img/logo-empresa.png" alt=""
+        onerror="this.style.display='none'">Datos en tiempo real de sistemas solares monitoreados</span>
+  <span>Actualizado: <span id="hora">–</span></span>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css">
+<script>
+/* ---------- Tabs ---------- */
+document.querySelectorAll('nav button').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('nav button').forEach(x => x.classList.remove('activa'));
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('activa'));
+    b.classList.add('activa');
+    document.getElementById('tab-' + b.dataset.tab).classList.add('activa');
+    if (b.dataset.tab === 'mapa') setTimeout(() => map.invalidateSize(), 60);
+    if (b.dataset.tab === 'stats') cargarStats();
+    if (b.dataset.tab === 'empresas') renderEmpresas(_lastZonas);
+  });
+});
+
+/* ---------- Mapa ---------- */
+const map = L.map('map', { zoomControl:false }).setView([23.5, -102], 4.5);
+L.control.zoom({ position:'topright' }).addTo(map);
+let encuadrado = false;
+const capaOscura = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution:'&copy; OpenStreetMap &copy; CARTO', maxZoom:18 });
+const capaClara = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  attribution:'&copy; OpenStreetMap &copy; CARTO', maxZoom:18 });
+let mapaOscuro = !(window.matchMedia &&
+  window.matchMedia('(prefers-color-scheme: light)').matches);
+(mapaOscuro ? capaOscura : capaClara).addTo(map);
+
+const BotonEstilo = L.control({ position:'topright' });
+BotonEstilo.onAdd = () => {
+  const b = L.DomUtil.create('button', 'btn-mapa');
+  b.type = 'button'; b.innerHTML = mapaOscuro ? '☀️' : '🌙';
+  b.title = 'Cambiar estilo del mapa';
+  L.DomEvent.disableClickPropagation(b);
+  b.onclick = () => {
+    mapaOscuro = !mapaOscuro;
+    if (mapaOscuro){ map.removeLayer(capaClara); capaOscura.addTo(map); b.innerHTML = '☀️'; }
+    else { map.removeLayer(capaOscura); capaClara.addTo(map); b.innerHTML = '🌙'; }
+  };
+  return b;
+};
+BotonEstilo.addTo(map);
+const capa = L.markerClusterGroup({
+  maxClusterRadius: 40,
+  spiderfyOnMaxZoom: true,
+  showCoverageOnHover: false,
+  iconCreateFunction: function(cluster){
+    const children = cluster.getAllChildMarkers();
+    const sinRed = children.filter(m => m._estadoSitio === 'sin_red').length;
+    const malo   = children.filter(m => m._estadoSitio === 'malo').length;
+    const cls = sinRed > 0 ? 'no' : malo > 0 ? 'volt' : 'ok';
+    return L.divIcon({
+      html: `<div class="cluster-icon ${cls}">${cluster.getChildCount()}</div>`,
+      className: '', iconSize: [36,36], iconAnchor: [18,18]
+    });
+  }
+}).addTo(map);
+
+function claseEstado(z){
+  // Compatibilidad: si el backend aún no envía 'estado', derivarlo de con_luz
+  return z.estado || (z.con_luz ? 'ok' : 'sin_red');
+}
+function claseMarcador(est){
+  return est === 'sin_red' ? 'no' : est === 'malo' ? 'volt' : 'ok';
+}
+
+function icono(est){
+  const cls = claseMarcador(est);
+  return L.divIcon({ className:'',
+    html:`<div style="position:relative">
+            ${est === 'sin_red' ? '<div class="pulso"></div>' : ''}
+            <div class="marcador ${cls}"></div></div>`,
+    iconSize:[18,18], iconAnchor:[9,9] });
+}
+const horaLocal = iso => iso ? new Date(iso).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}) : '';
+
+// Orden de severidad para la lista: apagón primero, luego voltaje, luego ok
+const sev = est => est === 'sin_red' ? 0 : est === 'malo' ? 1 : 2;
+
+function renderMapa(data){
+  const lista = document.getElementById('listaZonas');
+  lista.innerHTML = '';
+  const zonas = data.zonas.slice().sort((a,b) =>
+    sev(claseEstado(a)) - sev(claseEstado(b)) || a.zona.localeCompare(b.zona));
+
+  zonas.forEach(z => {
+    const est = claseEstado(z);
+    const volts = z.voltajes || {};
+    const fases = Object.keys(volts).sort();
+    const tipoSistema = fases.length === 3 ? 'Trifásico'
+                      : fases.length === 2 ? 'Monofásico 120/240V'
+                      : fases.length === 1 ? 'Monofásico' : '';
+    const fueraDeRango = v => v < 113 || v > 135;
+    const chipsVolt = fases.map(f =>
+      `<span class="vfase ${fueraDeRango(volts[f]) ? 'mal' : ''}">${f} ${volts[f]}V</span>`
+    ).join('');
+    const claseFila = est === 'sin_red' ? 'no' : est === 'malo' ? 'volt' : 'ok';
+    const textoTiempo =
+      est === 'sin_red' ? 'sin luz' + (z.desde ? '<br>desde ' + horaLocal(z.desde) : '')
+    : est === 'malo'    ? 'voltaje<br>fuera de rango'
+    :                     'con luz';
+    const lineaVolt = fases.length
+      ? `<div class="voltajes">${chipsVolt}${tipoSistema ? `<span class="vtipo">${tipoSistema}</span>` : ''}</div>`
+      : est === 'sin_red'
+      ? `<div class="voltajes"><span class="vfase mal">Sin señal de voltaje</span></div>`
+      : '';
+    const fila = document.createElement('div');
+    fila.className = 'zona';
+    fila.innerHTML = `
+      <div class="estado ${claseFila}"></div>
+      <div class="info">
+        <div class="nombre">${z.zona}</div>
+        <div class="detalle">${z.sitios} instalación${z.sitios>1?'es':''}</div>
+        ${lineaVolt}
+      </div>
+      <div class="tiempo ${est === 'ok' ? '' : claseFila}">${textoTiempo}</div>`;
+    fila.onclick = () => map.flyTo([z.lat, z.lng], 14);
+    lista.appendChild(fila);
+  });
+
+  const sin = data.zonas.filter(z => claseEstado(z) === 'sin_red').length;
+  const mal = data.zonas.filter(z => claseEstado(z) === 'malo').length;
+  document.getElementById('conLuz').textContent = data.zonas.length - sin - mal;
+  document.getElementById('voltMal').textContent = mal;
+  document.getElementById('sinLuz').textContent = sin;
+  document.getElementById('hora').textContent = horaLocal(data.actualizado);
+  document.getElementById('rayo').classList.toggle('alerta', sin > 0 || mal > 0);
+}
+
+/* ---------- Marcadores individuales por instalación ---------- */
+async function actualizarSitios(){
+  try{
+    const r = await fetch('/api/sitios');
+    const d = await r.json();
+    capa.clearLayers();
+
+    d.sitios.forEach(s => {
+      const est = s.estado || 'desconocido';
+      const cls = est === 'sin_red' ? 'no' : est === 'malo' ? 'volt' : 'ok';
+      const volts = s.voltajes && typeof s.voltajes === 'object' ? s.voltajes : {};
+      const fases = Object.keys(volts).sort();
+      const fueraDeRango = v => v < 113 || v > 135;
+      const chipsVolt = fases.length
+        ? fases.map(f => {
+            const v = Number(volts[f]);
+            return `<span class="vfase ${fueraDeRango(v) ? 'mal' : ''}">${f} ${v}V</span>`;
+          }).join('')
+        : '';
+      const tipoSistema = fases.length === 3 ? 'Trifásico'
+                        : fases.length === 2 ? 'Monofásico 120/240V'
+                        : fases.length === 1 ? 'Monofásico' : '';
+      const popupEstado =
+        est === 'sin_red' ? `<span class="no-txt">✗ Apagón de CFE</span>`
+      : est === 'malo'    ? `<span class="volt-txt">⚠ Voltaje fuera de rango</span>`
+      :                     `<span class="ok-txt">✓ Con energía</span>`;
+      const popupVolts = fases.length
+        ? `<br><span style="display:inline-flex;gap:5px;flex-wrap:wrap;margin-top:5px">${chipsVolt}</span>`
+        : `<br><span class="vfase mal" style="margin-top:5px;display:inline-block">Sin señal de voltaje</span>`;
+      const popupTipo = tipoSistema ? `<br><small style="color:#8aa3a0">${tipoSistema}</small>` : '';
+      const emp = empresasData[s.instalador] || null;
+      const popupEmp = emp
+        ? `<div class="popup-instalador">
+             <img src="${emp.logo}" alt="${emp.nombre}" onerror="this.style.display='none'">
+             <span>${emp.nombre}</span>
+           </div>` : '';
+
+      const marker = L.marker([s.lat, s.lng], { icon: icono(est) });
+      marker._estadoSitio = est;  // guardado en la instancia, no en options
+      marker.bindPopup(
+        `<b>${s.zona}</b><br>${popupEstado}${popupVolts}${popupTipo}${popupEmp}`
+      );
+      capa.addLayer(marker);
+    });
+  }catch(e){ console.error('sitios:', e); }
+}
+
+let empresasData = {};
+
+async function actualizar(){
+  try{
+    const r = await fetch('/api/estado');
+    const data = await r.json();
+    empresasData = data.empresas || {};
+    render(data);
+    actualizarSitios(); // marcadores individuales en paralelo
+  }catch(e){ console.error(e); }
+}
+/* ---------- Empresas ---------- */
+function renderEmpresas(zonas){
+  const grid = document.getElementById('empresasGrid');
+  if (!Object.keys(empresasData).length){ grid.innerHTML = '<div class="vacio">Sin datos de empresas aún.</div>'; return; }
+
+  // Contar sitios por empresa
+  const conteo = {};
+  (zonas||[]).forEach(z => {
+    if (z.instalador){ conteo[z.instalador] = (conteo[z.instalador]||0) + z.sitios; }
+  });
+
+  grid.innerHTML = Object.entries(empresasData).map(([id, emp]) => {
+    const sitios = conteo[id] || 0;
+    const ciudades = (emp.ciudades||[]).join(', ');
+    return `<div class="empresa-card">
+      <img src="${emp.logo}" alt="${emp.nombre}" onerror="this.style.display='none'">
+      <div class="emp-nombre">${emp.nombre}</div>
+      <div class="emp-ciudades">${ciudades}</div>
+      <span class="emp-sitios">${sitios} punto${sitios!==1?'s':''}</span>
+    </div>`;
+  }).join('');
+}
+
+let _lastZonas = [];
+
+function render(data){
+  _lastZonas = data.zonas || [];
+  renderMapa(data);
+}
+
+/* ---------- Bottom sheet drag (mobile only) ---------- */
+(function(){
+  const sheet = document.getElementById('sheet');
+  const handle = document.getElementById('sheetHandle');
+  const lista  = document.getElementById('listaZonas');
+  if (!sheet || !handle) return;
+  if (window.innerWidth >= 700) return;
+
+  let startY = 0, startTranslate = 0, currentTranslate = 0;
+  let dragging = false, engaged = false;
+  let lastY = 0, lastT = 0, velocity = 0;
+
+  function tabH(){ return sheet.parentElement.offsetHeight || window.innerHeight; }
+  function hideT(){ return tabH() - 28; }   // almost hidden — just handle bar
+  function peekT(){ return tabH() - 80; }   // one row visible
+  function halfT(){ return tabH() * 0.55; } // half screen
+  function fullT(){ return tabH() * 0.12; } // nearly full
+
+  function snapTo(translateY){
+    sheet.style.transition = 'transform .32s cubic-bezier(.4,0,.2,1)';
+    currentTranslate = Math.max(fullT(), Math.min(hideT(), translateY));
+    sheet.style.transform = `translateY(${currentTranslate}px)`;
+    setTimeout(() => { sheet.style.transition = ''; map.invalidateSize(); }, 340);
+  }
+
+  function initSheet(){
+    sheet.style.transition = 'none';
+    currentTranslate = peekT();
+    sheet.style.transform = `translateY(${currentTranslate}px)`;
+    // Wait for layout to settle, then force the correct Mexico view
+    setTimeout(() => {
+      map.invalidateSize({reset: true});
+      map.setView([23.5, -102], 4.5);
+    }, 50);
+  }
+  if (document.readyState === 'complete') setTimeout(initSheet, 120);
+  else window.addEventListener('load', () => setTimeout(initSheet, 120));
+  window.addEventListener('resize', initSheet);
+
+  function getY(e){ return e.touches ? e.touches[0].clientY : e.clientY; }
+  const fromHandle = e => !!e.target.closest('#sheetHandle');
+
+  function onStart(e){
+    startY = lastY = getY(e);
+    startTranslate = currentTranslate;
+    lastT = Date.now();
+    velocity = 0;
+    dragging = true;
+    engaged = fromHandle(e); // handle always engages immediately
+    sheet.style.transition = 'none';
+  }
+
+  function onMove(e){
+    if (!dragging) return;
+    const y = getY(e);
+    const now = Date.now();
+    const dt = now - lastT || 1;
+    velocity = (y - lastY) / dt;
+    lastY = y; lastT = now;
+    const dy = y - startY;
+
+    // Engage from list only when: scrolled to top AND swiping downward
+    if (!engaged){
+      if (lista && lista.scrollTop <= 0 && dy > 6){
+        engaged = true;
+        startY = y;
+        startTranslate = currentTranslate;
+      } else {
+        return;
+      }
+    }
+
+    e.preventDefault();
+    const t = Math.max(fullT(), Math.min(hideT(), startTranslate + (y - startY)));
+    currentTranslate = t;
+    sheet.style.transform = `translateY(${t}px)`;
+  }
+
+  function onEnd(){
+    if (!dragging) return;
+    dragging = false; engaged = false;
+    if (velocity > 0.4){ snapTo(hideT()); return; }
+    if (velocity < -0.4){ snapTo(fullT()); return; }
+    const points = [hideT(), peekT(), halfT(), fullT()];
+    const nearest = points.reduce((a,b) =>
+      Math.abs(b - currentTranslate) < Math.abs(a - currentTranslate) ? b : a);
+    snapTo(nearest);
+  }
+
+  sheet.addEventListener('touchstart', onStart, {passive:true});
+  sheet.addEventListener('touchmove',  onMove,  {passive:false});
+  sheet.addEventListener('touchend',   onEnd);
+  handle.addEventListener('mousedown', onStart);
+  window.addEventListener('mousemove', e => dragging && onMove(e));
+  window.addEventListener('mouseup',   onEnd);
+})();
+
+actualizar();
+setInterval(actualizar, 30000);
+
+/* ---------- Estadísticas ---------- */
+let periodoActivo = 'all';
+
+function fmtHoras(h){
+  if (h < 1) return `${Math.round(h*60)} min`;
+  return `${h}h`;
+}
+
+async function cargarStats(){
+  const cont = document.getElementById('statsContent');
+  cont.innerHTML = '<div class="vacio" style="padding:32px 0;text-align:center">Cargando…</div>';
+  try{
+    const r = await fetch(`/api/stats?periodo=${periodoActivo}`);
+    const d = await r.json();
+    const res = d.resumen;
+    const top = d.por_zona.filter(z => z.apagones > 0 || z.alertas_voltaje > 0).slice(0,6);
+    const maxH = Math.max(...(top.map(z => z.horas_sin_luz)), 0.1);
+
+    const periodos = [
+      {p:'all',l:'Todo'},{p:'180d',l:'6 meses'},{p:'90d',l:'3 meses'},
+      {p:'30d',l:'30 días'},{p:'7d',l:'7 días'}
+    ];
+
+    cont.innerHTML = `
+      <h2 style="font-size:1.05rem;font-weight:900;margin-bottom:4px">Historial eléctrico</h2>
+      <div class="sub" style="margin-bottom:12px">Apagones y alertas registrados por nuestros sensores.</div>
+
+      <div class="periodo-sel" id="periodoSel">
+        ${periodos.map(p =>
+          `<button class="per${periodoActivo===p.p?' activa':''}" data-p="${p.p}">${p.l}</button>`
+        ).join('')}
+      </div>
+
+      <!-- 4 métricas en grid 2x2 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px">
+
+        <div class="stat-card apagon-card">
+          <div class="stat-icon">⚡</div>
+          <div class="stat-big">${res.total_apagones}</div>
+          <div class="stat-lbl">apagones</div>
+        </div>
+
+        <div class="stat-card tiempo-card">
+          <div class="stat-icon">🕐</div>
+          <div class="stat-big">${fmtHoras(res.horas_sin_luz)}</div>
+          <div class="stat-lbl">sin CFE</div>
+        </div>
+
+        <div class="stat-card voltaje-card">
+          <div class="stat-icon">⚠</div>
+          <div class="stat-big">${res.alertas_voltaje}</div>
+          <div class="stat-lbl">alertas de voltaje</div>
+        </div>
+
+        <div class="stat-card zonas-card">
+          <div class="stat-icon">📍</div>
+          <div class="stat-big">${res.zonas_afectadas}</div>
+          <div class="stat-lbl">zonas afectadas</div>
+        </div>
+      </div>
+
+      <!-- Zonas más afectadas -->
+      ${top.length ? `
+      <div class="stat-section">
+        <div class="stat-section-title">Zonas más afectadas</div>
+        ${top.map(z => {
+          const pct = Math.round((z.horas_sin_luz / maxH) * 100);
+          const dur = fmtHoras(z.horas_sin_luz);
+          return `<div class="zona-fila">
+            <div class="zona-fila-top">
+              <span class="zona-fila-nombre">${z.zona}</span>
+              <span class="zona-fila-dato">${z.apagones} apagón${z.apagones!==1?'es':''} · ${dur}</span>
+            </div>
+            <div class="zona-track">
+              <div class="zona-fill" style="width:${pct}%"></div>
+            </div>
+            ${z.alertas_voltaje ? `
+            <div class="zona-volt-lbl">
+              ⚠ ${z.alertas_voltaje} alerta${z.alertas_voltaje!==1?'s':''} de voltaje
+            </div>` : ''}
+          </div>`;
+        }).join('')}
+      </div>` : '<div class="vacio" style="margin:12px 0">Sin apagones en este período.</div>'}
+
+      <!-- Histograma -->
+      ${d.histograma.length ? `
+      <div class="stat-section" style="margin-top:16px">
+        <div class="stat-section-title">Apagones por día (últimos 30 días)</div>
+        <div class="histo-wrap" id="histoCanvas"></div>
+      </div>` : ''}
+
+      <!-- Nota clientes -->
+      <div class="stat-nota">
+        <span style="color:var(--energia);font-weight:900;font-size:1.1rem">0 minutos</span>
+        sin luz para nuestros clientes durante todos estos apagones.
+      </div>`;
+
+    // Reasignar listeners del selector
+    document.querySelectorAll('.per').forEach(btn => {
+      btn.addEventListener('click', () => {
+        periodoActivo = btn.dataset.p;
+        cargarStats();
+      });
+    });
+
+    // Dibujar histograma con canvas
+    if (d.histograma.length){
+      const wrap = document.getElementById('histoCanvas');
+      const maxC = Math.max(...d.histograma.map(h => h.apagones), 1);
+      wrap.innerHTML = d.histograma.map(h => {
+        const pct = Math.round((h.apagones / maxC) * 100);
+        const lbl = h.dia.slice(5);
+        return `<div class="hcol">
+          <div class="hbar" style="height:${Math.max(pct,4)}%"></div>
+          <div class="hlbl">${lbl}</div>
+        </div>`;
+      }).join('');
+    }
+
+  }catch(e){
+    console.error('stats:', e);
+    document.getElementById('statsContent').innerHTML =
+      '<div class="vacio" style="padding:24px 0;text-align:center">No se pudo cargar el historial.</div>';
+  }
+}
+</script>
+</body>
+</html>

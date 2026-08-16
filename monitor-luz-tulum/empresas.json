@@ -1,0 +1,26 @@
+{
+  "los-amigos": {
+    "nombre": "Los Amigos Energy",
+    "logo": "/static/img/logo-empresa.png",
+    "ciudades": [
+      "Tulum",
+      "Cancún",
+      "Cozumel",
+      "Playa del Carmen",
+      "Akumal",
+      "Puerto Aventuras",
+      "Mérida",
+      "Cuernavaca"
+    ],
+    "website": "https://tengoluz.mx"
+  },
+  "sonnenworks": {
+    "nombre": "Sonnenworks",
+    "logo": "/static/img/logo-sonnenworks.png",
+    "ciudades": [
+      "San Pedro Garza García",
+      "Monterrey"
+    ],
+    "website": ""
+  }
+}

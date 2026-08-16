@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Deploy de lae-portal (portal + autonomía unificados) desde el Mac al VPS.
+# Deploy de lae-portal (portal + autonomía unificados) desde el Mac al homeserver
+# (LXC "lae-apps" en Proxmox, alcanzable por Tailscale como alias "lae-lxc").
 # Uso: ./deploy.sh [app...]   (sin argumento = lae-portal)
 
 set -euo pipefail
 
-VPS_HOST="lae-vps"
+VPS_HOST="lae-lxc"
 VPS_BASE="/opt"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 

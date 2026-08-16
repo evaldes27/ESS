@@ -1,0 +1,22 @@
+services:
+  monitor-luz:
+    build: .
+    container_name: monitor-luz-tulum
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8020:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - VRM_TOKEN=${VRM_TOKEN}
+      - POLL_SECONDS=30
+      - DB_PATH=/app/data/historial.db
+      - ZONAS_FILE=/app/zonas.json
+    volumes:
+      - ./data:/app/data
+      - ./zonas.json:/app/zonas.json:ro
+    networks:
+      - lae-net
+
+networks:
+  lae-net:
+    external: true
