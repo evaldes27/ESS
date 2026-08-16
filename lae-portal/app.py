@@ -906,9 +906,9 @@ def mi_foto(token, asset_id):
 # comprimir, un reporte con fotos pesaba +100MB y tardaba ~50s. Se redimensionan
 # y se bajan en paralelo para que quede ligero y dentro del timeout de gunicorn.
 
-REPORTE_FOTOS_MAX = 16
-REPORTE_FOTO_ANCHO = 900
-REPORTE_FOTO_CALIDAD = 70
+REPORTE_FOTOS_MAX = 10
+REPORTE_FOTO_ANCHO = 640
+REPORTE_FOTO_CALIDAD = 60
 
 
 def foto_base64(asset_id):
@@ -964,7 +964,7 @@ def construir_reporte(cfg, m, lang):
             fotos_restantes -= 1
 
     if pendientes:
-        with ThreadPoolExecutor(max_workers=8) as pool:
+        with ThreadPoolExecutor(max_workers=3) as pool:
             resultados = pool.map(lambda par: _foto_o_none(par[1]), pendientes)
         for (i, foto), data_uri in zip(pendientes, resultados):
             if data_uri:
