@@ -3,3 +3,4 @@ requests==2.32.3
 gunicorn==22.0.0
 xhtml2pdf==0.2.16
 Pillow==10.4.0
+twilio==9.3.7

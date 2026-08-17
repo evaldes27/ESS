@@ -20,6 +20,7 @@ import base64
 import calendar
 import json
 import os
+import threading
 import time
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
@@ -427,6 +428,78 @@ def datos_vrm(cfg):
     frescos = construir_vrm(cfg)
     _cache_vrm[vrm_id] = (ahora, frescos)
     return frescos
+
+
+# ------------------------------------------------- resumen de apagón (WhatsApp)
+# "El portal muere, el PDF no" tenía su gemelo pendiente: "se fue la luz 20 min,
+# tu casa no se enteró". Un hilo en background (uno solo -- ver Dockerfile,
+# -w 1) revisa cada cliente con vrm_id + whatsapp_avisos, y en cuanto detecta
+# que la red pasó de caída/rechazada a conectada, manda el resumen por WhatsApp
+# vía Twilio. Reutiliza datos_vrm/construir_vrm y formato_horas, no duplica
+# el cálculo de autonomía.
+
+TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
+TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
+TWILIO_WHATSAPP_FROM = os.environ.get("TWILIO_WHATSAPP_FROM", "")  # ej. +15553153877
+TWILIO_CONTENT_SID_APAGON = os.environ.get("TWILIO_CONTENT_SID_APAGON", "")
+
+_estado_red = {}  # vrm_id -> timestamp de cuándo se cayó (None si está conectada)
+
+
+def enviar_whatsapp_apagon(numero, duracion_txt, soc, horas_restantes_txt):
+    from twilio.rest import Client
+
+    client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+    client.messages.create(
+        from_=f"whatsapp:{TWILIO_WHATSAPP_FROM}",
+        to=f"whatsapp:{numero}",
+        content_sid=TWILIO_CONTENT_SID_APAGON,
+        content_variables=json.dumps({
+            "1": duracion_txt,
+            "2": str(soc),
+            "3": horas_restantes_txt or "batería llena",
+        }),
+    )
+
+
+def revisar_apagones():
+    for token, cfg in CLIENTES.items():
+        numero = cfg.get("whatsapp_avisos")
+        if not numero or "vrm_id" not in cfg:
+            continue
+        vrm_id = cfg["vrm_id"]
+        try:
+            d = datos_vrm(cfg)
+        except Exception:
+            app.logger.exception("Poller de apagones: falló VRM para %s", token)
+            continue
+
+        caida_desde = _estado_red.get(vrm_id)
+        if d["red"] in ("caida", "rechazada"):
+            if caida_desde is None:
+                _estado_red[vrm_id] = time.time()
+        elif caida_desde is not None:
+            _estado_red[vrm_id] = None
+            duracion_txt = formato_horas((time.time() - caida_desde) / 3600) or "unos minutos"
+            try:
+                enviar_whatsapp_apagon(numero, duracion_txt, d["soc"], d["horas_txt"])
+            except Exception:
+                app.logger.exception("No se pudo enviar el WhatsApp de apagón para %s", token)
+
+
+def poller_apagones():
+    while True:
+        time.sleep(POLL_SEGUNDOS)
+        try:
+            revisar_apagones()
+        except Exception:
+            app.logger.exception("Error en el poller de apagones")
+
+
+if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_WHATSAPP_FROM and TWILIO_CONTENT_SID_APAGON:
+    threading.Thread(target=poller_apagones, daemon=True).start()
+else:
+    app.logger.warning("WhatsApp de apagones desactivado: faltan variables TWILIO_* en .env")
 
 
 # ====================================================================== CFE
